@@ -937,6 +937,213 @@ img {
   height: 14px;
 }
 
+/* Sub-type labels in drop zone */
+.drop-sub-types {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-light);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+/* ── File Queue ─────────────────────────────── */
+.file-queue {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.file-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.file-queue-count {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green-dark);
+}
+
+.clear-queue-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, background 0.2s;
+}
+.clear-queue-btn:hover {
+  color: var(--pink);
+  background: rgba(212,134,126,0.08);
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--cream);
+  transition: background 0.15s;
+}
+.file-item:hover { background: var(--green-pale); }
+
+.file-item-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.file-item-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.file-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
+.file-item-name {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--brown-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* File type badges */
+.ftype-badge {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.ftype-badge--csv {
+  background: rgba(74,124,89,0.12);
+  color: var(--green-dark);
+}
+.ftype-badge--pdf {
+  background: rgba(212,134,126,0.15);
+  color: #b05d55;
+}
+.ftype-badge--img {
+  background: rgba(160,139,118,0.15);
+  color: var(--brown);
+}
+
+/* File status badges */
+.file-item-status {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-item-status--waiting {
+  background: rgba(160,139,118,0.12);
+  color: var(--text-light);
+}
+.file-item-status--parsing {
+  background: rgba(74,124,89,0.12);
+  color: var(--green-dark);
+}
+.file-item-status--done {
+  background: rgba(74,124,89,0.18);
+  color: var(--green-dark);
+}
+.file-item-status--error {
+  background: rgba(212,134,126,0.18);
+  color: #b05d55;
+}
+
+.file-item-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.15rem;
+  display: flex;
+  align-items: center;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.file-item-remove:hover { opacity: 1; }
+.file-item-remove svg { width: 13px; height: 13px; }
+
+/* "Add more files" button inside queue */
+.add-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.45rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green);
+  background: none;
+  border: 1.5px dashed var(--green);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.add-more-btn:hover {
+  background: var(--green-pale);
+}
+.add-more-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Left-column extra file-type badge variants */
+.file-badge--pink {
+  background: rgba(212,134,126,0.15);
+  color: #b05d55;
+}
+.file-badge--brown {
+  background: rgba(90,70,53,0.1);
+  color: var(--brown);
+}
+
 /* Analyze button */
 .analyze-btn {
   width: 100%;

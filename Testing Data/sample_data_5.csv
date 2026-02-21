@@ -1,0 +1,11 @@
+Date,Team,Vendor,Expense_Description,Amount,Notes
+2026-05-01,Operations,WeWork,"Office rent + utilities included",5200.00,"electricity bundled?"
+2026-05-02,Engineering,AWS,"Cloud hosting monthly usage",3400.00,"server region us-east"
+2026-05-03,HR,Delta Airlines,"Flight to SF conference",890.00,"round trip"
+2026-05-04,HR,Hilton,"Hotel stay - 3 nights",720.00,"business travel"
+2026-05-05,Operations,Uber,"Airport transport",95.00,"gas vehicle"
+2026-05-06,Engineering,Apple,"MacBooks (4)",6400.00,"energy efficient models"
+2026-05-07,Operations,DoorDash,"Team lunch delivery",210.00,"food delivery"
+2026-05-08,Operations,PG&E,"Small satellite office electricity",480.00,""
+2026-05-09,Marketing,Google Ads,"Digital campaign",1500.00,"online only"
+2026-05-10,Engineering,DigitalOcean,"Cloud compute",1200.00,"increased traffic"

@@ -1,0 +1,11 @@
+Date,Dept,Vendor,Description,Qty,Unit,Total_USD,Notes
+2026-02-01,Production,Shell,"Fuel for forklifts + backup generator",,gallons,980.00,"approx 120 gal?"
+2026-02-02,Production,National Grid,"Electric svc - plant floor machinery",,kWh,2400.00,"heavy usage week"
+2026-02-03,Shipping,FedEx Freight,"Pallet shipment - Midwest distributor",,miles,1850.00,"freight class 250"
+2026-02-04,Facilities,Industrial Waste Solutions,"Hazardous waste disposal (chemicals)",,service,1320.00,"includes solvent drums"
+2026-02-05,Admin,Amazon,"Office chairs + desks (8 units)",8,units,3600.00,"new hires"
+2026-02-06,Production,Local Gas Co,"Natural gas - heating + processing",,therms,1190.00,"winter spike"
+2026-02-08,Shipping,UPS,"Express parts shipment (air?)",,shipment,720.00,"urgent repair part"
+2026-02-09,Production,ExxonMobil,"Diesel delivery bulk tank refill",450,gallons,2010.00,"delivery truck onsite"
+2026-02-10,Facilities,City Water Dept,"Water utility - plant",,gallons,410.00,"cooling systems"
+2026-02-11,Production,Alibaba Supplier,"Steel component import - ocean freight",,container,8200.00,"est 3 week transit"
