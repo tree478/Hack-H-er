@@ -1202,6 +1202,26 @@ function initOutcomesPage() {
   renderSuggestions(data.categories);
   renderTimeline(data.milestones);
 
+  // Wire up the manual Save to History button
+  const saveBtn = document.getElementById('saveToHistoryBtn');
+  if (saveBtn && typeof glSaveAnalysis === 'function') {
+    const user = typeof glGetCurrentUser === 'function' ? glGetCurrentUser() : null;
+    if (!user) {
+      // Not logged in — show a prompt to join instead
+      saveBtn.textContent = 'Sign In to Save';
+      saveBtn.addEventListener('click', () => { window.location.href = 'join.html'; });
+    } else {
+      saveBtn.addEventListener('click', () => {
+        const ok = glSaveAnalysis(score, data);
+        if (ok) {
+          saveBtn.textContent = '✓ Saved to Profile';
+          saveBtn.classList.add('save-btn--saved');
+          saveBtn.disabled = true;
+        }
+      });
+    }
+  }
+
   const btn = document.getElementById('downloadBtn');
   if (btn) btn.addEventListener('click', () => generatePDF(score, data));
 }

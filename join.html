@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join the Green — GreenLens</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="18" stroke="#4a7c59" stroke-width="2.5"/>
+          <path d="M20 8 C20 8, 10 16, 12 24 C13.5 29, 18 30, 20 30 C22 30, 26.5 29, 28 24 C30 16, 20 8, 20 8Z" fill="#4a7c59"/>
+          <path d="M20 14 L20 26 M16 20 Q20 16 24 20" stroke="#faf5ef" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">GreenLens</span>
+      </a>
+      <nav class="header-nav">
+        <a href="upload.html" class="nav-btn">Upload Data</a>
+        <a href="outcomes.html" class="nav-btn nav-btn--accent">Outcomes</a>
+        <a href="about.html" class="nav-btn">About Us</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="join-hero">
+    <h1 class="join-hero-title">Join the Green</h1>
+    <p class="join-hero-sub">Create an account to save your analyses, track progress over time, and build a greener business.</p>
+  </section>
+
+  <!-- Auth Card -->
+  <section class="join-section">
+    <div class="join-card">
+
+      <!-- Tab Switcher -->
+      <div class="join-tabs" role="tablist">
+        <button class="join-tab join-tab--active" id="tabSignup" role="tab" aria-selected="true" aria-controls="panelSignup">
+          Sign Up
+        </button>
+        <button class="join-tab" id="tabLogin" role="tab" aria-selected="false" aria-controls="panelLogin">
+          Log In
+        </button>
+      </div>
+
+      <!-- ── Sign Up Panel ── -->
+      <div class="join-panel" id="panelSignup" role="tabpanel" aria-labelledby="tabSignup">
+        <form class="join-form" id="signupForm" novalidate>
+
+          <div class="join-field">
+            <label class="join-label" for="su-company">Company Name</label>
+            <input class="join-input" type="text" id="su-company" name="companyName"
+              placeholder="Acme Sustainability Co." autocomplete="organization" required>
+          </div>
+
+          <div class="join-field">
+            <label class="join-label" for="su-phone">Phone Number</label>
+            <input class="join-input" type="tel" id="su-phone" name="phone"
+              placeholder="+1 (555) 000-0000" autocomplete="tel" required>
+          </div>
+
+          <div class="join-field">
+            <label class="join-label" for="su-email">Email Address</label>
+            <input class="join-input" type="email" id="su-email" name="email"
+              placeholder="you@company.com" autocomplete="email" required>
+          </div>
+
+          <div class="join-divider"></div>
+
+          <div class="join-field">
+            <label class="join-label" for="su-username">Username</label>
+            <input class="join-input" type="text" id="su-username" name="username"
+              placeholder="greenleader42" autocomplete="username" required>
+          </div>
+
+          <div class="join-field">
+            <label class="join-label" for="su-password">Password</label>
+            <div class="join-password-wrap">
+              <input class="join-input" type="password" id="su-password" name="password"
+                placeholder="At least 6 characters" autocomplete="new-password" required>
+              <button type="button" class="join-eye-btn" aria-label="Toggle password visibility" data-target="su-password">
+                <svg viewBox="0 0 20 20" fill="none"><path d="M1 10s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="join-error" id="signupError" hidden></div>
+
+          <button type="submit" class="join-submit-btn">
+            Create Account
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+
+        </form>
+
+        <div class="join-switch">
+          Already have an account?
+          <button class="join-switch-btn" id="goToLogin">Log In</button>
+        </div>
+      </div>
+
+      <!-- ── Log In Panel ── -->
+      <div class="join-panel join-panel--hidden" id="panelLogin" role="tabpanel" aria-labelledby="tabLogin">
+        <form class="join-form" id="loginForm" novalidate>
+
+          <div class="join-field">
+            <label class="join-label" for="li-username">Username</label>
+            <input class="join-input" type="text" id="li-username" name="username"
+              placeholder="greenleader42" autocomplete="username" required>
+          </div>
+
+          <div class="join-field">
+            <label class="join-label" for="li-password">Password</label>
+            <div class="join-password-wrap">
+              <input class="join-input" type="password" id="li-password" name="password"
+                placeholder="Your password" autocomplete="current-password" required>
+              <button type="button" class="join-eye-btn" aria-label="Toggle password visibility" data-target="li-password">
+                <svg viewBox="0 0 20 20" fill="none"><path d="M1 10s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="join-error" id="loginError" hidden></div>
+
+          <button type="submit" class="join-submit-btn">
+            Log In
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+
+        </form>
+
+        <div class="join-switch">
+          Don't have an account yet?
+          <button class="join-switch-btn" id="goToSignup">Sign Up</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 GreenLens. Built for businesses that care about tomorrow.</p>
+  </footer>
+
+  <script src="auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (glGetCurrentUser()) window.location.href = 'history.html';
+
+    const tabSignup   = document.getElementById('tabSignup');
+    const tabLogin    = document.getElementById('tabLogin');
+    const panelSignup = document.getElementById('panelSignup');
+    const panelLogin  = document.getElementById('panelLogin');
+
+    function showPanel(panel) {
+      const isSignup = panel === 'signup';
+      tabSignup.classList.toggle('join-tab--active', isSignup);
+      tabLogin.classList.toggle('join-tab--active', !isSignup);
+      tabSignup.setAttribute('aria-selected', isSignup);
+      tabLogin.setAttribute('aria-selected', !isSignup);
+      panelSignup.classList.toggle('join-panel--hidden', !isSignup);
+      panelLogin.classList.toggle('join-panel--hidden', isSignup);
+    }
+
+    tabSignup.addEventListener('click', () => showPanel('signup'));
+    tabLogin.addEventListener('click',  () => showPanel('login'));
+    document.getElementById('goToLogin').addEventListener('click',  () => showPanel('login'));
+    document.getElementById('goToSignup').addEventListener('click', () => showPanel('signup'));
+
+    // Toggle password visibility
+    document.querySelectorAll('.join-eye-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    // Sign-up form submission
+    document.getElementById('signupForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const form = e.target;
+      const errEl = document.getElementById('signupError');
+      errEl.hidden = true;
+
+      const result = glSignup({
+        companyName: form.companyName.value,
+        phone:       form.phone.value,
+        email:       form.email.value,
+        username:    form.username.value,
+        password:    form.password.value,
+      });
+
+      if (!result.ok) {
+        errEl.textContent = result.error;
+        errEl.hidden = false;
+        return;
+      }
+      window.location.href = 'terms.html';
+    });
+
+    // Log-in form submission
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const form  = e.target;
+      const errEl = document.getElementById('loginError');
+      errEl.hidden = true;
+
+      const result = glLogin(form.username.value, form.password.value);
+
+      if (!result.ok) {
+        errEl.textContent = result.error;
+        errEl.hidden = false;
+        return;
+      }
+      window.location.href = 'history.html';
+    });
+  </script>
+</body>
+</html>

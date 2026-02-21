@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analysis History — GreenLens</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="18" stroke="#4a7c59" stroke-width="2.5"/>
+          <path d="M20 8 C20 8, 10 16, 12 24 C13.5 29, 18 30, 20 30 C22 30, 26.5 29, 28 24 C30 16, 20 8, 20 8Z" fill="#4a7c59"/>
+          <path d="M20 14 L20 26 M16 20 Q20 16 24 20" stroke="#faf5ef" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">GreenLens</span>
+      </a>
+      <nav class="header-nav">
+        <a href="upload.html" class="nav-btn">Upload Data</a>
+        <a href="outcomes.html" class="nav-btn nav-btn--accent">Outcomes</a>
+        <a href="about.html" class="nav-btn">About Us</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="history-hero">
+    <div class="history-hero-inner">
+      <div>
+        <h1 class="history-hero-title">Analysis History</h1>
+        <p class="history-hero-sub" id="historyHeroSub">Your past sustainability analyses, saved in one place.</p>
+      </div>
+      <div class="history-hero-actions">
+        <a href="upload.html" class="cta-btn cta-btn--light history-new-btn">
+          + New Analysis
+        </a>
+        <button class="history-logout-btn" id="profileLogoutBtn">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M13 15l4-5-4-5M17 10H7M10 3H5a2 2 0 00-2 2v10a2 2 0 002 2h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Log Out
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- History Content -->
+  <main class="history-main">
+    <div class="history-inner">
+
+      <!-- Empty state -->
+      <div class="history-empty" id="historyEmpty" hidden>
+        <svg class="history-empty-icon" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="30" stroke="#d6e8d4" stroke-width="2"/>
+          <path d="M32 42V26" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M24 33l8-8 8 8" stroke="#4a7c59" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 46h24" stroke="#4a7c59" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <h2 class="history-empty-title">No analyses saved yet</h2>
+        <p class="history-empty-desc">Upload your first CSV file and view your Outcomes page to save an analysis to your history.</p>
+        <a href="upload.html" class="cta-btn">
+          Upload Your First File
+          <svg class="cta-arrow" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <!-- History list -->
+      <div class="history-grid" id="historyGrid"></div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 GreenLens. Built for businesses that care about tomorrow.</p>
+  </footer>
+
+  <script src="auth.js"></script>
+  <script>
+    // Redirect to join if not logged in
+    const currentUser = glGetCurrentUser();
+    if (!currentUser) window.location.href = 'join.html';
+
+    document.getElementById('profileLogoutBtn').addEventListener('click', () => {
+      glLogout();
+      window.location.href = 'index.html';
+    });
+
+    // Personalise hero subtitle
+    const subEl = document.getElementById('historyHeroSub');
+    if (subEl && currentUser) {
+      subEl.textContent = `Welcome back, ${currentUser.companyName}. Here are your past sustainability analyses.`;
+    }
+
+    function getScoreColor(s) {
+      return s <= 40 ? '#d9534f' : s <= 70 ? '#e8944a' : s <= 90 ? '#c9b645' : '#4a7c59';
+    }
+
+    function getScoreLabel(s) {
+      return s <= 40 ? 'High Impact' : s <= 70 ? 'Moderate Impact' : s <= 90 ? 'Sustainable' : 'Green Leader';
+    }
+
+    function formatCO2(kg) {
+      if (!kg) return '—';
+      if (kg >= 1000) return (kg / 1000).toFixed(2) + ' t CO₂e';
+      return kg.toFixed(1) + ' kg CO₂e';
+    }
+
+    function formatDate(isoStr) {
+      return new Date(isoStr).toLocaleDateString('en-US', {
+        year:    'numeric',
+        month:   'long',
+        day:     'numeric',
+        hour:    '2-digit',
+        minute:  '2-digit',
+      });
+    }
+
+    function buildCard(entry, index) {
+      const color = getScoreColor(entry.score);
+      const label = getScoreLabel(entry.score);
+      const totalCO2 = entry.analysis && entry.analysis.totalCO2
+        ? formatCO2(entry.analysis.totalCO2) : '—';
+      const cats = (entry.analysis && entry.analysis.categories) || [];
+      const topCat = cats.length ? cats.slice().sort((a,b) => b.value - a.value)[0] : null;
+
+      const catPills = cats.slice(0, 3).map(c =>
+        `<span class="hist-cat-pill" style="background:${c.color}22;color:${c.color}">${c.label} ${c.value}%</span>`
+      ).join('');
+
+      return `
+        <article class="hist-card" style="--score-color:${color}" aria-label="Analysis from ${formatDate(entry.savedAt)}">
+          <div class="hist-card-top">
+            <div class="hist-score-ring">
+              <svg viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" stroke="#f0e8dc" stroke-width="7" fill="none"/>
+                <circle cx="40" cy="40" r="34"
+                  stroke="${color}" stroke-width="7" fill="none"
+                  stroke-dasharray="${2 * Math.PI * 34}"
+                  stroke-dashoffset="${2 * Math.PI * 34 * (1 - entry.score / 100)}"
+                  stroke-linecap="round"
+                  transform="rotate(-90 40 40)"/>
+              </svg>
+              <span class="hist-score-value" style="color:${color}">${entry.score}</span>
+            </div>
+            <div class="hist-card-meta">
+              <p class="hist-card-label" style="color:${color}">${label}</p>
+              <p class="hist-card-company">${entry.companyName || currentUser.companyName}</p>
+              <time class="hist-card-date">${formatDate(entry.savedAt)}</time>
+            </div>
+          </div>
+
+          <div class="hist-card-stats">
+            <div class="hist-stat">
+              <span class="hist-stat-label">Total CO₂e</span>
+              <span class="hist-stat-value">${totalCO2}</span>
+            </div>
+            ${topCat ? `
+            <div class="hist-stat">
+              <span class="hist-stat-label">Top Emission Area</span>
+              <span class="hist-stat-value">${topCat.label}</span>
+            </div>` : ''}
+          </div>
+
+          ${catPills ? `<div class="hist-cat-pills">${catPills}</div>` : ''}
+
+          <button class="hist-view-btn" data-index="${index}">
+            Restore &amp; View Analysis
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </article>
+      `;
+    }
+
+    function renderHistory() {
+      const history = glGetHistory();
+      const grid    = document.getElementById('historyGrid');
+      const empty   = document.getElementById('historyEmpty');
+
+      if (!history.length) {
+        empty.hidden = false;
+        grid.hidden  = true;
+        return;
+      }
+
+      empty.hidden = true;
+      grid.hidden  = false;
+      grid.innerHTML = history.map((entry, i) => buildCard(entry, i)).join('');
+
+      grid.querySelectorAll('.hist-view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx   = parseInt(btn.dataset.index, 10);
+          const entry = history[idx];
+          if (glRestoreAnalysis(entry)) {
+            window.location.href = 'outcomes.html';
+          }
+        });
+      });
+    }
+
+    renderHistory();
+  </script>
+</body>
+</html>

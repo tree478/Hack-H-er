@@ -41,7 +41,7 @@
         <strong>GreenLens</strong> takes your messy receipts, bills, and logistics logs and transforms them into a clear 
         <em>Sustainability Score</em> with actionable, data-backed recommendations — so you can make a real impact without breaking the bank.
       </p>
-      <a href="upload.html" class="cta-btn">
+      <a href="join.html" class="cta-btn" id="heroCtaBtn">
         Get Your Score
         <svg class="cta-arrow" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
@@ -170,6 +170,21 @@
     <p>&copy; 2026 GreenLens. Built for businesses that care about tomorrow.</p>
   </footer>
 
+  <script src="auth.js"></script>
   <script src="main.js"></script>
+  <script>
+    // If already logged in, "Get Your Score" goes straight to upload
+    const _heroBtn = document.getElementById('heroCtaBtn');
+    if (_heroBtn && glGetCurrentUser()) {
+      _heroBtn.href = 'upload.html';
+      _heroBtn.textContent = 'Upload Your Data';
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      arrow.setAttribute('class','cta-arrow');
+      arrow.setAttribute('viewBox','0 0 20 20');
+      arrow.setAttribute('fill','none');
+      arrow.innerHTML = '<path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      _heroBtn.appendChild(arrow);
+    }
+  </script>
 </body>
 </html>

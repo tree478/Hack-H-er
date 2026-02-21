@@ -1703,6 +1703,46 @@ img {
   transform: translateX(3px);
 }
 
+.save-to-history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: var(--white);
+  color: var(--green-dark);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 2px solid var(--green);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.save-to-history-btn:hover:not(:disabled) {
+  background: var(--green-pale);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.save-to-history-btn:disabled,
+.save-to-history-btn.save-btn--saved {
+  background: var(--green-pale);
+  border-color: var(--green);
+  color: var(--green-dark);
+  opacity: 1;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.save-to-history-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .download-hint {
   font-family: var(--font-body);
   font-size: 0.82rem;
@@ -2059,5 +2099,751 @@ img {
   .team-photo {
     width: 150px;
     height: 150px;
+  }
+}
+
+/* ============================================
+   Nav — Auth Buttons (Join / History / Logout)
+   ============================================ */
+.nav-btn--join {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--white);
+}
+
+.nav-btn--join:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+  color: var(--white);
+}
+
+.nav-btn--logout {
+  background: none;
+  border: 1.5px solid var(--brown-light);
+  color: var(--brown);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.55rem 1.3rem;
+  border-radius: var(--radius-xl);
+  transition: all 0.2s ease;
+}
+
+.nav-btn--logout:hover {
+  background: var(--brown-light);
+  border-color: var(--brown-light);
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   Join the Green Page — Hero
+   ============================================ */
+.join-hero {
+  background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 70%, var(--green-light) 100%);
+  color: var(--white);
+  text-align: center;
+  padding: 3rem 2rem 2.75rem;
+}
+
+.join-hero-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.join-hero-sub {
+  font-family: var(--font-body);
+  font-size: 0.97rem;
+  opacity: 0.88;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ── Auth Card ─────────────────────────────── */
+.join-section {
+  background: var(--cream);
+  padding: 3.5rem 2rem 5rem;
+  min-height: calc(100vh - 320px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.join-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  border: 1px solid rgba(160, 139, 118, 0.1);
+}
+
+/* ── Tabs ──────────────────────────────────── */
+.join-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--cream-dark);
+}
+
+.join-tab {
+  padding: 0.9rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.join-tab--active {
+  color: var(--green-dark);
+  background: var(--white);
+  border-bottom-color: var(--green);
+}
+
+.join-tab:not(.join-tab--active):hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.5);
+}
+
+/* ── Panels ────────────────────────────────── */
+.join-panel {
+  padding: 2rem;
+}
+
+.join-panel--hidden {
+  display: none;
+}
+
+/* ── Form fields ───────────────────────────── */
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.join-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.join-label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brown);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.join-input {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--cream);
+  border: 1.5px solid rgba(160, 139, 118, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+  width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.join-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.12);
+  background: var(--white);
+}
+
+.join-input::placeholder { color: var(--text-light); }
+
+.join-divider {
+  height: 1px;
+  background: var(--cream-dark);
+  margin: 0.25rem 0;
+}
+
+/* ── Password toggle ───────────────────────── */
+.join-password-wrap {
+  position: relative;
+}
+
+.join-password-wrap .join-input {
+  padding-right: 2.75rem;
+}
+
+.join-eye-btn {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.join-eye-btn:hover { color: var(--green); }
+
+.join-eye-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Error banner ──────────────────────────── */
+.join-error {
+  background: var(--pink-pale);
+  border: 1px solid var(--pink-light);
+  border-radius: var(--radius-md);
+  color: #7a4a44;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  line-height: 1.5;
+}
+
+/* ── Submit button ─────────────────────────── */
+.join-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--green);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-md);
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.join-submit-btn:hover:not(:disabled) {
+  background: var(--green-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.join-submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.join-submit-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Switch prompt ─────────────────────────── */
+.join-switch {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1.25rem 2rem 1.5rem;
+  border-top: 1px solid var(--cream-dark);
+}
+
+.join-switch-btn {
+  background: none;
+  border: none;
+  color: var(--green-dark);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  margin-left: 0.25rem;
+  transition: color 0.2s;
+}
+
+.join-switch-btn:hover { color: var(--green); }
+
+/* ============================================
+   Terms & Privacy Policy Page
+   ============================================ */
+.terms-body {
+  background: var(--cream);
+}
+
+.terms-main {
+  padding: 3rem 2rem 6rem;
+}
+
+.terms-inner {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.terms-doc-header {
+  margin-bottom: 2rem;
+}
+
+.terms-doc-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 0.4rem;
+}
+
+.terms-doc-meta {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+.terms-doc-intro {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  background: var(--green-pale);
+  border-left: 4px solid var(--green);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+/* ── Document body ─────────────────────────── */
+.terms-doc-body {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(160, 139, 118, 0.1);
+  margin-bottom: 2rem;
+}
+
+.terms-doc-body h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin: 1.75rem 0 0.6rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cream-dark);
+}
+
+.terms-doc-body h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.terms-doc-body p {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.terms-doc-body code {
+  font-family: monospace;
+  background: var(--cream-dark);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+  color: var(--brown-dark);
+}
+
+/* ── Agree/Decline bar ─────────────────────── */
+.terms-action-bar {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 2rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(160, 139, 118, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.terms-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.terms-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--green);
+  margin-top: 1px;
+  cursor: pointer;
+}
+
+.terms-action-btns {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.terms-agree-btn {
+  flex: 1;
+  min-width: 200px;
+}
+
+.terms-decline-btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px solid rgba(160, 139, 118, 0.3);
+  border-radius: var(--radius-xl);
+  padding: 0.7rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.terms-decline-btn:hover {
+  border-color: var(--pink);
+  color: #9e5c56;
+  background: var(--pink-pale);
+}
+
+.terms-must-agree {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #9e5c56;
+  background: var(--pink-pale);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .terms-doc-body {
+    padding: 1.5rem 1.25rem;
+  }
+  .terms-action-bar {
+    padding: 1.25rem;
+  }
+  .terms-action-btns {
+    flex-direction: column;
+  }
+  .terms-agree-btn {
+    min-width: unset;
+  }
+}
+
+/* ============================================
+   History Page
+   ============================================ */
+.history-hero {
+  background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 70%, var(--green-light) 100%);
+  color: var(--white);
+  padding: 2.5rem 2rem;
+}
+
+.history-hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.history-hero-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  line-height: 1.2;
+}
+
+.history-hero-sub {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  opacity: 0.88;
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.history-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.history-new-btn {
+  font-size: 0.9rem;
+}
+
+.history-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.2rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.history-logout-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.history-main {
+  background: var(--cream);
+  min-height: calc(100vh - 280px);
+  padding: 3rem 2rem 5rem;
+}
+
+.history-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Empty state ───────────────────────────── */
+.history-empty {
+  text-align: center;
+  padding: 5rem 2rem;
+}
+
+.history-empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.5rem;
+  display: block;
+}
+
+.history-empty-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--brown-dark);
+  margin-bottom: 0.75rem;
+}
+
+.history-empty-desc {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 420px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+}
+
+/* ── History grid ──────────────────────────── */
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── History card ──────────────────────────── */
+.hist-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(160, 139, 118, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  transition: all 0.25s ease;
+}
+
+.hist-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--green-pale);
+}
+
+.hist-card-top {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* ── Score ring ────────────────────────────── */
+.hist-score-ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.hist-score-ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hist-score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.hist-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-card-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.2rem;
+}
+
+.hist-card-company {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hist-card-date {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+
+/* ── Stats row ─────────────────────────────── */
+.hist-card-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.85rem 1rem;
+  background: var(--cream);
+  border-radius: var(--radius-md);
+}
+
+.hist-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hist-stat-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.hist-stat-value {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Category pills ────────────────────────── */
+.hist-cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hist-cat-pill {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+/* ── View button ───────────────────────────── */
+.hist-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--green);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.hist-view-btn:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+}
+
+.hist-view-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.hist-view-btn:hover svg { transform: translateX(3px); }
+
+@media (max-width: 640px) {
+  .history-hero-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .history-grid {
+    grid-template-columns: 1fr;
   }
 }
