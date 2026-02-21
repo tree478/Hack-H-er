@@ -1784,6 +1784,119 @@ img {
 }
 
 /* ============================================
+   Outcomes Page — Projection Chart
+   ============================================ */
+.projection-chart-container {
+  position: relative;
+  max-width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.projection-summaries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.projection-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+}
+
+.projection-summary--bad  { background: rgba(212, 134, 126, 0.10); border: 1px solid rgba(212,134,126,0.25); }
+.projection-summary--good { background: rgba(74,  124,  89, 0.08); border: 1px solid rgba(74,124,89,0.20); }
+
+.projection-legend-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+
+.projection-legend-dot--bad  { background: #d4867e; }
+.projection-legend-dot--good { background: #4a7c59; }
+
+.projection-summary-text {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Sector Comparison ─────────────────────── */
+.sector-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--cream);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--green);
+}
+
+.sector-icon {
+  display: none; /* used for spacing context only */
+}
+
+.sector-comparison-text {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.sector-badge {
+  display: inline-block;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--radius-xl);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sector-badge--aboveAverage {
+  background: var(--pink-pale);
+  color: #9e5c56;
+}
+
+.sector-badge--average {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.sector-badge--belowAverage {
+  background: var(--green-pale);
+  color: var(--green-dark);
+}
+
+.sector-benchmark-note {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .projection-summaries {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
    About Us Page — Hero Banner
    ============================================ */
 .about-hero {

@@ -69,7 +69,37 @@
       </div>
     </section>
 
-    <!-- 4. Recommendations -->
+    <!-- 4. Projected Emissions Line Chart -->
+    <section class="oc-section" aria-labelledby="projection-heading">
+      <div class="oc-card">
+        <h2 id="projection-heading" class="oc-card-heading">Projected Carbon Emissions Over 12 Months</h2>
+        <div class="projection-chart-container">
+          <canvas id="projectionChart" aria-label="Line graph comparing projected emissions with and without recommended changes"></canvas>
+        </div>
+        <div class="projection-summaries">
+          <div class="projection-summary projection-summary--bad">
+            <span class="projection-legend-dot projection-legend-dot--bad"></span>
+            <p id="noChangesSummaryText" class="projection-summary-text"></p>
+          </div>
+          <div class="projection-summary projection-summary--good">
+            <span class="projection-legend-dot projection-legend-dot--good"></span>
+            <p id="changesSummaryText" class="projection-summary-text"></p>
+          </div>
+        </div>
+        <div class="sector-comparison" id="sectorComparison">
+          <svg class="sector-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="sector-comparison-text">
+            Compared to businesses in your sector, your emissions are:
+            <span class="sector-badge" id="sectorBadge"></span>
+          </p>
+          <p class="sector-benchmark-note" id="sectorBenchmarkNote"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Recommendations -->
     <section class="oc-section" aria-labelledby="recs-heading">
       <div class="oc-card">
         <h2 id="recs-heading" class="oc-card-heading">Recommendations</h2>
