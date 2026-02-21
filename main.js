@@ -459,7 +459,11 @@ async function generatePDF(score, data) {
     const TEXT    = [46,   46, 46];
     const SUBTLE  = [130, 130, 130];
     const G_PALE  = [214, 232, 212];
+    const CREAM   = [250, 245, 239];
     const WHITE   = [255, 255, 255];
+
+    const company = data.companyName || 'Your Business';
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     let y = mTop;
 
@@ -474,19 +478,27 @@ async function generatePDF(score, data) {
       y += 6;
     }
 
-    function h1(text) {
-      checkPage(18);
+    function sectionBadge(num, text) {
+      checkPage(22);
+      // Numbered pill
+      doc.setFillColor(...G_DARK);
+      doc.roundedRect(mL, y, 7, 7, 1, 1, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
+      doc.setFontSize(7);
+      doc.setTextColor(...WHITE);
+      doc.text(String(num), mL + 3.5, y + 5.2, { align: 'center' });
+      // Section title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
       doc.setTextColor(...G_DARK);
-      doc.text(text, mL, y);
-      y += 9;
+      doc.text(text, mL + 10, y + 5.8);
+      y += 13;
     }
 
     function h2(text) {
       checkPage(12);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(...BR_DARK);
       doc.text(text, mL, y);
       y += 7;
@@ -494,206 +506,471 @@ async function generatePDF(score, data) {
 
     function body(text) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setTextColor(...TEXT);
       const lines = doc.splitTextToSize(text, cW);
-      checkPage(lines.length * 5.5 + 5);
+      checkPage(lines.length * 5.2 + 4);
       doc.text(lines, mL, y);
-      y += lines.length * 5.5 + 5;
+      y += lines.length * 5.2 + 4;
+    }
+
+    function bullet(label, text) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...BR_DARK);
+      const labelW = doc.getTextWidth(label + '  ');
+      checkPage(14);
+      doc.text(label, mL + 4, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...TEXT);
+      const lines = doc.splitTextToSize(text, cW - 4 - labelW);
+      doc.text(lines, mL + 4 + labelW, y);
+      y += lines.length * 5.2 + 3;
     }
 
     function gap(mm = 4) { y += mm; }
 
-    // ── TITLE HEADER ──────────────────────────────────────────
+    // ══════════════════════════════════════════
+    //  COVER PAGE
+    // ══════════════════════════════════════════
     doc.setFillColor(...G_DARK);
-    doc.rect(0, 0, PW, 52, 'F');
+    doc.rect(0, 0, PW, 80, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
+    doc.setFontSize(26);
     doc.setTextColor(...WHITE);
-    doc.text('GreenLens', mL, 22);
+    doc.text('GreenLens', mL, 30);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(13);
-    doc.text('Sustainability Report', mL, 32);
+    doc.setFontSize(14);
+    doc.text('Sustainability Report', mL, 42);
 
     doc.setFontSize(9);
-    doc.setTextColor(214, 232, 212);
-    const company = data.companyName || 'Your Business';
-    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`${company}  ·  ${dateStr}`, mL, 45);
+    doc.setTextColor(...G_PALE);
+    doc.text(`${company}  ·  ${dateStr}`, mL, 55);
 
-    y = 64;
-
-    // Score badge
+    // Score badge on cover
     const sColor = getScoreColor(score);
     const sRGB = sColor === '#d9534f' ? [217, 83, 79]
                : sColor === '#e8944a' ? [232, 148, 74]
                : sColor === '#c9b645' ? [201, 182, 69]
                : [74, 124, 89];
     doc.setFillColor(...sRGB);
-    doc.roundedRect(mL, y, 85, 22, 3, 3, 'F');
+    doc.roundedRect(mL, 68, 90, 22, 3, 3, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(...WHITE);
-    doc.text(String(score), mL + 10, y + 15);
+    doc.text(String(score), mL + 10, 83);
     doc.setFontSize(9);
-    doc.text(getScoreLabel(score).toUpperCase(), mL + 30, y + 15);
-    y += 30;
+    doc.text(getScoreLabel(score).toUpperCase(), mL + 28, 83);
 
-    doc.setFont('helvetica', 'normal');
+    // Table of Contents
+    y = 100;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...G_DARK);
+    doc.text('Contents', mL, y);
+    y += 8;
+
+    const toc = [
+      '1.  Executive Summary',
+      '2.  Sustainability Score & Methodology',
+      '3.  Emissions Breakdown',
+      '4.  Key Impact Areas',
+      '5.  Detailed Recommendations',
+      '6.  6–12 Month Roadmap',
+      '7.  Long-Term Strategy (2–5 Years)',
+      '8.  Why Sustainability Matters',
+      '9.  Appendix — Data & Calculations',
+    ];
+    toc.forEach(line => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...TEXT);
+      doc.text(line, mL + 4, y);
+      y += 7;
+    });
+
+    gap(6);
+    doc.setFillColor(...CREAM);
+    doc.roundedRect(mL, y, cW, 22, 3, 3, 'F');
+    doc.setFont('helvetica', 'italic');
     doc.setFontSize(9);
     doc.setTextColor(...SUBTLE);
-    const intro = 'This report details your sustainability footprint, score calculation, prioritized recommendations, and a 12-month implementation roadmap.';
-    doc.text(doc.splitTextToSize(intro, cW), mL, y);
-    y += 14;
+    const disclaimer = 'This report was generated by GreenLens based on your uploaded business data. Emissions estimates use established EPA, IPCC, and industry-standard conversion factors. All figures are approximations intended for internal planning purposes.';
+    doc.text(doc.splitTextToSize(disclaimer, cW - 8), mL + 4, y + 7);
 
+    // ══════════════════════════════════════════
+    //  SECTION 1 — EXECUTIVE SUMMARY
+    // ══════════════════════════════════════════
+    doc.addPage(); y = mTop;
+    sectionBadge(1, 'Executive Summary');
     hr();
 
-    // ── SECTION 1: SUSTAINABILITY SCORE ───────────────────────
-    h1('1. Sustainability Score');
-    h2(`Score: ${score} / 100 — ${getScoreLabel(score)}`);
-    body(
-      `Your GreenLens Sustainability Score of ${score} places your business in the "${getScoreLabel(score)}" category on a scale of 0 to 100. ` +
-      (score <= 40
-        ? 'This indicates your operations currently carry a high environmental impact and significant structural changes are needed to meaningfully reduce your carbon footprint.'
-        : score <= 70
-        ? 'This indicates your business is making progress but has considerable room for improvement, particularly in your highest-emission categories.'
-        : score <= 90
-        ? 'This indicates strong sustainability performance with targeted opportunities remaining to reach the top tier.'
-        : 'This is the highest tier, recognising your business as a leader in sustainable operations across all measured categories.')
-    );
+    const cats = data.categories;
+    const topTwo = [...cats].sort((a, b) => b.value - a.value).slice(0, 2);
 
-    gap();
-    h2('How the Score Was Calculated');
     body(
-      'Score = 100 − [(100 − Energy Efficiency) × 0.30  +  Transportation Impact × 0.25  +  Supply Chain Impact × 0.25  +  Waste Production × 0.20]. ' +
-      'Energy efficiency is weighted most heavily at 30% because it is typically the single largest controllable emission source for small businesses. ' +
-      'Transportation and supply chain are weighted equally at 25% each, reflecting their significant but variable impact depending on business model. ' +
-      'Waste is weighted at 20% as it is often the smallest contributor but still represents meaningful reduction potential.'
+      `${company} received a GreenLens Sustainability Score of ${score} out of 100, placing it in the "${getScoreLabel(score)}" tier. ` +
+      `This report provides a comprehensive analysis of your current environmental footprint, the methodology behind your score, ` +
+      `and a prioritised action plan designed to reduce emissions, cut costs, and strengthen your brand position.`
     );
-
-    gap();
-    h2('Input Values Used');
+    gap(2);
     body(
-      `Energy Efficiency Score: ${data.energyEfficiency ?? 'N/A'} — derived from utility consumption relative to industry benchmarks for your business size and sector. ` +
-      `Transportation Impact Score: ${data.transportation ?? 'N/A'} — estimated from shipping frequency, vehicle types, and average route distances weighted by fuel type. ` +
-      `Supply Chain Impact: ${data.supplyChain ?? 'N/A'} — inferred from supplier origin data, procurement volumes, and industry-average Scope 3 emissions coefficients. ` +
-      `Waste Production Score: ${data.waste ?? 'N/A'} — based on reported waste output and disposal methods, applying standard landfill methane emission factors.`
+      `Your two highest-impact areas are ${topTwo[0].label} (${topTwo[0].value}% of footprint) and ` +
+      `${topTwo[1] ? topTwo[1].label + ' (' + topTwo[1].value + '%)' : 'Other'}. ` +
+      `Together they represent your most immediate opportunities for meaningful, measurable improvement. ` +
+      (data.totalCO2 ? `Your uploaded expenses are estimated to produce ${formatCO2kg(data.totalCO2)} of CO₂ equivalent in total. ` : '') +
+      `The recommendations and roadmap in Sections 5 and 6 address these priorities in practical, phased steps.`
+    );
+    gap(2);
+    body(
+      `Key actions to prioritise this quarter: (1) Commission a facility energy audit and switch to LED lighting. ` +
+      `(2) Deploy route-optimisation software to reduce transportation emissions. ` +
+      `(3) Engage your top three suppliers about environmental certifications. ` +
+      `These three steps alone can reduce your estimated footprint by 15–25% within six months while generating net cost savings.`
     );
 
     gap(5); hr();
 
-    // ── SECTION 2: CARBON EMISSIONS BREAKDOWN ─────────────────
-    h1('2. Carbon Emissions Breakdown');
-    const cats = data.categories;
+    // ══════════════════════════════════════════
+    //  SECTION 2 — SCORE & METHODOLOGY
+    // ══════════════════════════════════════════
+    sectionBadge(2, 'Sustainability Score & Methodology');
+    hr();
+
+    h2(`Score: ${score} / 100 — ${getScoreLabel(score)}`);
+    body(
+      score <= 40
+        ? `A score of ${score} indicates high environmental impact across your operations. Significant structural changes are needed to meaningfully reduce your carbon footprint, but the roadmap in Section 6 provides a clear, achievable path forward.`
+        : score <= 70
+        ? `A score of ${score} indicates your business is making progress but retains considerable room for improvement, particularly in your highest-emission categories. Targeted action on the areas identified in this report can move you into the Sustainable tier within 12 months.`
+        : score <= 90
+        ? `A score of ${score} reflects strong sustainability performance. Targeted improvements in your remaining high-impact areas can move your business into the Green Leader tier.`
+        : `A score of ${score} places your business in the top tier of sustainability performance across all measured categories. Focus on maintaining and communicating this leadership position while exploring Scope 3 reductions.`
+    );
+    gap(3);
+
+    h2('Scoring Formula');
+    body(
+      'Score  =  100 − [(100 − Energy Efficiency) × 0.30  +  Transportation Impact × 0.25  +  Supply Chain Impact × 0.25  +  Waste Production × 0.20]'
+    );
+    gap(2);
+    body(
+      'Weightings reflect the relative contribution of each category to total small-business emissions based on EPA and IEA benchmarks. ' +
+      'Energy efficiency is weighted highest at 30% because it is typically the single largest controllable source. ' +
+      'Transportation and supply chain are equally weighted at 25% each. Waste is weighted at 20%.'
+    );
+    gap(3);
+
+    h2('Input Values');
+    bullet('Energy Efficiency:', `${data.energyEfficiency ?? 'N/A'} — derived from utility consumption relative to industry benchmarks.`);
+    bullet('Transportation Impact:', `${data.transportation ?? 'N/A'} — estimated from shipping frequency, vehicle types, and route distances.`);
+    bullet('Supply Chain Impact:', `${data.supplyChain ?? 'N/A'} — inferred from supplier origin data and Scope 3 emissions coefficients.`);
+    bullet('Waste Production:', `${data.waste ?? 'N/A'} — based on reported waste output, disposal methods, and IPCC methane factors.`);
+
+    gap(5); hr();
+
+    // ══════════════════════════════════════════
+    //  SECTION 3 — EMISSIONS BREAKDOWN
+    // ══════════════════════════════════════════
+    sectionBadge(3, 'Emissions Breakdown');
+    hr();
+
     body(
       `Your total estimated carbon footprint is distributed across five operational areas: ` +
-      `${cats[0].label} (${cats[0].value}%), ${cats[1].label} (${cats[1].value}%), ` +
-      `${cats[2].label} (${cats[2].value}%), ${cats[3].label} (${cats[3].value}%), ` +
-      `and ${cats[4].label} (${cats[4].value}%). ` +
-      `The two largest categories together account for ${cats[0].value + cats[1].value}% of your footprint and represent your highest-priority areas for action.`
+      cats.map(c => `${c.label} (${c.value}%)`).join(', ') + '. ' +
+      `The two largest categories — ${topTwo[0].label} and ${topTwo[1] ? topTwo[1].label : 'Other'} — together account for ` +
+      `${topTwo[0].value + (topTwo[1] ? topTwo[1].value : 0)}% of your footprint.`
     );
+    gap(3);
 
-    gap();
-
-    // Embed pie chart image from canvas
+    // Embed pie chart
     try {
       const chartCanvas = document.getElementById('emissionsChart');
       if (chartCanvas) {
         const imgData = chartCanvas.toDataURL('image/png');
         const imgW = 90, imgH = 90;
-        checkPage(imgH + 8);
+        checkPage(imgH + 10);
         doc.addImage(imgData, 'PNG', (PW - imgW) / 2, y, imgW, imgH);
-        y += imgH + 6;
+        y += imgH + 8;
       }
     } catch (_) {}
 
-    body(
-      'Each category value was estimated using your uploaded data combined with established emissions conversion factors. ' +
-      'Energy figures apply EPA eGRID regional electricity emission factors for your geographic area. ' +
-      'Transportation emissions use average fuel economy data for common commercial vehicle types matched against your shipping records. ' +
-      'Supply chain values incorporate industry-average Scope 3 emissions intensity coefficients from the EPA Supply Chain Greenhouse Gas Emission Factors dataset. ' +
-      'Waste figures apply standard IPCC landfill methane emission factors adjusted for your reported waste composition and local waste management practices.'
-    );
+    // Category breakdown rows
+    cats.forEach(c => {
+      checkPage(10);
+      // Bar background
+      doc.setFillColor(...CREAM);
+      doc.roundedRect(mL, y, cW, 7, 1, 1, 'F');
+      // Bar fill (proportional)
+      const barW = (c.value / 100) * cW;
+      const barRGB = c.color
+        ? c.color.match(/\w\w/g).map(x => parseInt(x, 16))
+        : [...G_DARK];
+      doc.setFillColor(...barRGB);
+      doc.roundedRect(mL, y, Math.max(barW, 2), 7, 1, 1, 'F');
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...WHITE);
+      doc.text(`${c.label}  ${c.value}%`, mL + 3, y + 5);
+      y += 10;
+    });
 
     gap(5); hr();
 
-    // ── SECTION 3: RECOMMENDATIONS ────────────────────────────
-    h1('3. Recommendations');
+    // ══════════════════════════════════════════
+    //  SECTION 4 — KEY IMPACT AREAS
+    // ══════════════════════════════════════════
+    sectionBadge(4, 'Key Impact Areas');
+    hr();
+
     body(
-      'The following recommendations are organized by emissions impact, addressing your highest-contributing areas first. ' +
-      'Both broad strategic approaches and specific, actionable steps are provided for each category.'
+      'The categories below are ranked from highest to lowest contribution to your estimated carbon footprint. ' +
+      'Each area includes a current-state assessment and the potential impact of targeted improvement.'
     );
-    gap();
+    gap(3);
+
+    const impactDetails = {
+      'Energy Efficiency':    { current: 'Utility-related emissions dominate your operational footprint.',        potential: 'LED retrofit + smart HVAC scheduling can cut energy emissions 30–50% within 12 months.' },
+      'Transportation Impact': { current: 'Logistics and vehicle use represent a significant and growing source.',  potential: 'Route optimisation and EV fleet transition can reduce transport emissions by 15–30% in year one.' },
+      'Supply Chain':         { current: 'Upstream purchasing decisions embed significant Scope 3 emissions.',      potential: 'Supplier audits and local sourcing shifts can reduce supply chain impact by 10–20% over 2 years.' },
+      'Waste':                { current: 'Waste disposal contributes methane emissions and embedded production impact.', potential: 'A recycling and composting programme can divert 40–60% of waste from landfill.' },
+      'Other':                { current: 'Miscellaneous operational emissions across unclassified expense lines.',   potential: 'Improved data granularity will allow more precise categorisation and targeted reductions.' },
+    };
+
+    cats.forEach(c => {
+      checkPage(28);
+      const detail = impactDetails[c.label] || { current: '—', potential: '—' };
+      h2(`${c.label} — ${c.value}% of footprint`);
+      bullet('Current state:', detail.current);
+      bullet('Reduction potential:', detail.potential);
+      gap(2);
+    });
+
+    gap(3); hr();
+
+    // ══════════════════════════════════════════
+    //  SECTION 5 — DETAILED RECOMMENDATIONS
+    // ══════════════════════════════════════════
+    sectionBadge(5, 'Detailed Recommendations');
+    hr();
+
+    body(
+      'The following recommendations are ordered by emissions impact, addressing your highest-contributing areas first. ' +
+      'Each recommendation includes a strategic rationale and concrete implementation steps.'
+    );
+    gap(3);
 
     const recSections = [
       {
         heading: 'Energy Efficiency',
-        text: 'Your energy consumption represents the single largest share of your carbon footprint. The most impactful first step is a comprehensive energy audit to identify where energy is being wasted across your facility. In concrete terms, replacing conventional lighting with LED fixtures can reduce lighting-related electricity use by 30 to 50 percent, with a typical payback period of one to two years. Installing programmable or smart thermostats and scheduling HVAC systems around actual occupancy can further reduce waste during evenings, weekends, and holidays. Over the medium term, transitioning to renewable energy — either through a green electricity tariff or a rooftop solar installation — can eliminate a significant portion of your purchased-electricity emissions entirely. A 10 kW rooftop solar system can offset 35 to 45 percent of a typical small business\'s annual electricity consumption depending on location.',
+        text: 'Commission a comprehensive facility energy audit to identify where energy is wasted across your operations. Replace all conventional lighting with LED fixtures — this alone can reduce lighting-related electricity use by 30 to 50%, with a payback period of one to two years. Install programmable or smart thermostats to reduce HVAC energy waste during evenings, weekends, and holidays. Over the medium term, switch to a green electricity tariff or install rooftop solar panels to eliminate a significant portion of Scope 2 emissions. A 10 kW rooftop system can offset 35–45% of a typical small business\'s annual electricity consumption.',
       },
       {
         heading: 'Transportation Impact',
-        text: 'Transportation is your second-largest emission source, and logistics optimisation is one of the fastest ways to reduce it without significant capital outlay. Route-optimisation software can reduce total vehicle miles traveled by 10 to 20 percent for businesses with regular delivery operations, lowering both fuel costs and emissions simultaneously. Consolidating shipments — batching orders to reduce the number of individual trips — further reduces consumption without requiring any infrastructure change. For businesses operating a vehicle fleet, transitioning your highest-mileage vehicles to electric or hybrid alternatives offers the largest long-term reduction. Federal and state tax credits for commercial EV purchases can substantially reduce the upfront cost of this transition, and available charging infrastructure grants can ease deployment.',
+        text: 'Deploy route-optimisation software to consolidate deliveries and reduce total vehicle miles traveled by 10–20%, lowering both fuel costs and tailpipe emissions. Consolidate shipments by batching orders where possible — this requires no capital outlay and delivers immediate savings. For fleet-operating businesses, prioritise transitioning your highest-mileage vehicles to electric or hybrid alternatives. Federal and state commercial EV tax credits can substantially reduce upfront acquisition costs, and available charging infrastructure grants ease deployment.',
       },
       {
         heading: 'Supply Chain',
-        text: 'Your supply chain represents embedded emissions from the production and transport of goods and materials your business purchases — often called Scope 3 emissions. Evaluating your key suppliers for environmental certifications such as ISO 14001 or B Corp status can help you prioritise partnerships with lower-emission producers. Shifting toward local and regional sourcing reduces transportation-related Scope 3 emissions and often supports shorter, more resilient supply chains. Engaging your top suppliers directly to request emissions data and improvement commitments can accelerate broader supply chain decarbonisation and position your business as a preferred partner for like-minded customers.',
+        text: 'Audit your top suppliers for environmental certifications such as ISO 14001 or B Corp status and prioritise partnerships with lower-emission producers. Shift toward local and regional sourcing where feasible — this reduces transportation-embedded Scope 3 emissions and builds more resilient supply chains. Engage your top three suppliers directly to request emissions data and improvement commitments; supplier engagement is increasingly expected by enterprise customers and regulators and can accelerate your overall Scope 3 reduction trajectory.',
       },
       {
         heading: 'Waste Reduction',
-        text: 'Waste production, while currently your smallest significant category, represents a straightforward area for measurable improvement with limited upfront cost. Implementing a comprehensive recycling and composting program across your facility can divert 40 to 60 percent of waste from landfill, reducing methane emissions from organic decomposition. Auditing your packaging across all products and switching to recycled-content, minimal, or biodegradable alternatives reduces both direct waste output and the upstream emissions embedded in packaging production. Partnering with a certified waste-to-energy provider for non-recyclable waste streams is an additional step to capture remaining emissions reductions while potentially recovering energy value.',
+        text: 'Implement a comprehensive recycling and composting programme across your facility to divert 40–60% of waste from landfill and reduce associated methane emissions. Audit your product packaging and switch to recycled-content, minimal, or biodegradable alternatives to cut both direct waste output and upstream production emissions. Consider partnering with a certified waste-to-energy provider for non-recyclable streams to recover energy value from residual waste.',
       },
     ];
 
     recSections.forEach(({ heading, text }) => {
       h2(heading);
       body(text);
-      gap(2);
+      gap(3);
     });
 
-    gap(3); hr();
+    gap(2); hr();
 
-    // ── SECTION 4: IMPLEMENTATION TIMELINE ───────────────────
-    h1('4. Implementation Timeline');
+    // ══════════════════════════════════════════
+    //  SECTION 6 — 6–12 MONTH ROADMAP
+    // ══════════════════════════════════════════
+    sectionBadge(6, '6–12 Month Roadmap');
+    hr();
+
     body(
-      'The following roadmap organises the recommendations above into a phased, 12-month action plan. ' +
-      'The sequencing prioritises high-impact, low-cost actions in the early months to generate momentum, ' +
-      'followed by more capital-intensive initiatives as your sustainability programme matures and early savings begin to accrue.'
+      'This phased roadmap sequences recommendations to prioritise high-impact, low-cost actions in the early months, ' +
+      'generating momentum and cost savings that fund later, more capital-intensive initiatives.'
     );
-    gap();
+    gap(3);
 
     const milestones = (data.milestones && data.milestones.length) ? data.milestones : generateTimeline();
     milestones.forEach(m => {
-      h2(`${m.period}: ${m.title}`);
-      body(m.desc);
-      gap(2);
+      checkPage(22);
+      // Timeline node row
+      doc.setFillColor(...G_DARK);
+      doc.circle(mL + 2.5, y + 1.5, 2.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...G_DARK);
+      doc.text(m.period, mL + 8, y + 3);
+      y += 7;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...BR_DARK);
+      doc.text(m.title, mL + 8, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...TEXT);
+      const lines = doc.splitTextToSize(m.desc, cW - 8);
+      doc.text(lines, mL + 8, y);
+      y += lines.length * 5.2 + 6;
     });
 
     gap(2);
     body(
-      'By following this roadmap, your business is positioned to achieve meaningful, measurable emissions reductions within a single year. ' +
-      'Each phase builds on the previous one, ensuring that early investments in energy efficiency and transportation create financial headroom for subsequent supply chain and waste initiatives. ' +
-      'We recommend re-uploading your data to GreenLens at the end of each major phase to track progress and recalibrate the plan as needed.'
+      'Re-upload your business data to GreenLens at the end of each phase to measure your updated Sustainability Score, ' +
+      'celebrate progress with your team, and recalibrate targets for the next period.'
     );
 
     gap(4); hr();
 
-    // ── SECTION 5: WHY IT MATTERS ─────────────────────────────
-    h1('5. Why It Matters');
+    // ══════════════════════════════════════════
+    //  SECTION 7 — LONG-TERM STRATEGY (2–5 YEARS)
+    // ══════════════════════════════════════════
+    sectionBadge(7, 'Long-Term Strategy (2–5 Years)');
+    hr();
+
     body(
-      'The actions outlined in this report are not just good for your bottom line — they are part of a broader global effort to limit warming to 1.5°C above pre-industrial levels, as called for by the Paris Agreement. ' +
-      'Small and medium-sized businesses collectively account for a significant share of global greenhouse gas emissions. ' +
-      'When businesses like yours take concrete, data-driven steps to reduce their footprint, the cumulative effect is substantial: lower demand for fossil fuels, less pressure on landfills, cleaner supply chains, and healthier communities. ' +
-      'Your commitment to sustainability also signals to customers, partners, and employees that your business is invested in the long-term health of the planet — an increasingly important differentiator in today\'s market.'
+      'Beyond the 12-month roadmap, a sustained long-term strategy is essential to reach net-zero operations and maintain competitive advantage as environmental standards tighten.'
+    );
+    gap(3);
+
+    const longTermItems = [
+      {
+        heading: 'Year 2: Deepen Renewable Energy',
+        text:    'Complete the transition to 100% renewable electricity through a power purchase agreement (PPA) or expanded on-site solar generation. Explore battery storage to reduce grid dependence during peak demand. This eliminates all Scope 2 emissions and can reduce overall energy costs by 20–35% over the asset\'s lifetime.',
+      },
+      {
+        heading: 'Year 2–3: Electrify the Fleet',
+        text:    'Complete the replacement of all remaining fossil-fuel fleet vehicles with electric alternatives. Establish on-site charging infrastructure and negotiate preferential overnight charging rates with your utility provider. EV total cost of ownership typically becomes favourable within 3–4 years compared with equivalent ICE vehicles.',
+      },
+      {
+        heading: 'Year 3–4: Achieve Science-Based Targets',
+        text:    'Formally commit to Science Based Targets initiative (SBTi) emissions reductions aligned with a 1.5°C pathway. Set a verified net-zero target date and publish annual progress reports. SBTi alignment is increasingly required by large enterprise customers and government procurement frameworks.',
+      },
+      {
+        heading: 'Year 4–5: Full Scope 3 Transparency',
+        text:    'Extend emissions measurement and reduction commitments across your entire value chain — including upstream suppliers and downstream product use. Implement a supplier sustainability scorecard and require environmental disclosure from all tier-1 partners. This positions your business as a sustainability leader capable of participating in premium supply chains and sustainability-linked financing.',
+      },
+    ];
+
+    longTermItems.forEach(({ heading, text }) => {
+      h2(heading);
+      body(text);
+      gap(3);
+    });
+
+    gap(2); hr();
+
+    // ══════════════════════════════════════════
+    //  SECTION 8 — WHY SUSTAINABILITY MATTERS
+    // ══════════════════════════════════════════
+    sectionBadge(8, 'Why Sustainability Matters');
+    hr();
+
+    h2('Climate Urgency');
+    body(
+      'Global average temperatures have already risen 1.2°C above pre-industrial levels, and the IPCC warns that exceeding 1.5°C will trigger irreversible climate tipping points. ' +
+      'Small and medium businesses collectively account for over 40% of global greenhouse gas emissions. Every organisation that takes data-driven steps to reduce its footprint contributes meaningfully to limiting this trajectory. ' +
+      'The actions in this report directly reduce your contribution to atmospheric CO₂ — and by extension, to rising seas, extreme weather events, and ecosystem collapse.'
+    );
+    gap(3);
+
+    h2('Brand Value & Customer Loyalty');
+    body(
+      'Consumer expectations around sustainability have shifted decisively. Studies consistently find that 60–70% of consumers are willing to pay a premium for sustainably produced goods and services, and that environmental values are a primary driver of brand loyalty among younger demographics. ' +
+      'Displaying your GreenLens Sustainability Score publicly communicates genuine, data-backed commitment — not just marketing claims. Businesses that achieve measurable sustainability improvements report stronger customer retention, higher Net Promoter Scores, and greater media visibility.'
+    );
+    gap(3);
+
+    h2('Regulatory Compliance & Risk Management');
+    body(
+      'Environmental disclosure requirements are expanding rapidly. The SEC\'s climate disclosure rules require public companies to report Scope 1 and 2 emissions starting in 2026, with supply chain (Scope 3) obligations for large filers following shortly after. ' +
+      'California\'s SB 253 and SB 261 already mandate climate-related financial disclosures for companies doing business in the state, regardless of where they are headquartered. The EU\'s Corporate Sustainability Reporting Directive (CSRD) extends similar requirements to non-EU companies with EU operations. ' +
+      'Proactively building your sustainability measurement and reporting capability today reduces compliance risk, avoids costly emergency remediation, and positions your business to respond confidently as regulations tighten.'
     );
 
-    gap(3);
+    gap(4); hr();
+
+    // ══════════════════════════════════════════
+    //  SECTION 9 — APPENDIX
+    // ══════════════════════════════════════════
+    sectionBadge(9, 'Appendix — Data & Calculations');
+    hr();
+
+    h2('Emissions Conversion Factors');
     body(
-      'We encourage you to share your sustainability journey and your GreenLens Sustainability Score with customers and stakeholders. ' +
-      'Transparency about environmental performance is increasingly valued by consumers and can meaningfully differentiate your business in a competitive market. ' +
-      'If you found this analysis valuable, we warmly invite you to recommend GreenLens to fellow business owners in your network. ' +
-      'Together, we can help more businesses understand and reduce their environmental impact — one data upload at a time.'
+      'Energy: EPA eGRID regional electricity emission factors (kg CO₂e per kWh) applied by geographic region. ' +
+      'Natural gas: 0.0531 kg CO₂e per MJ (IPCC AR6 Annex II). ' +
+      'Diesel: 2.68 kg CO₂e per litre. ' +
+      'Petrol / gasoline: 2.31 kg CO₂e per litre.'
+    );
+    gap(2);
+
+    body(
+      'Transportation: Average fuel economy benchmarks for commercial van (22 mpg), light truck (18 mpg), and heavy goods vehicle (8 mpg) applied against estimated route distances from shipping records. ' +
+      'Air freight: 0.602 kg CO₂e per tonne-km (ICAO methodology). ' +
+      'Sea freight: 0.011 kg CO₂e per tonne-km (IMO 2023 GHG Strategy).'
+    );
+    gap(2);
+
+    body(
+      'Supply chain: Industry-average Scope 3 emissions intensity coefficients from the EPA Supply Chain Greenhouse Gas Emission Factors v1.3 dataset, matched to vendor category classification. ' +
+      'Waste: IPCC Tier 1 landfill methane emission factors adjusted for reported waste composition (food, paper, mixed). ' +
+      'Composted and recycled materials are credited at 0 kg CO₂e per tonne at point of diversion.'
+    );
+    gap(3);
+
+    h2('Score Derivation');
+    body(
+      `Energy Efficiency input: ${data.energyEfficiency ?? 'N/A'} | ` +
+      `Transportation input: ${data.transportation ?? 'N/A'} | ` +
+      `Supply Chain input: ${data.supplyChain ?? 'N/A'} | ` +
+      `Waste input: ${data.waste ?? 'N/A'}`
+    );
+    gap(1);
+    body(
+      `Score  =  100 − [(100 − ${data.energyEfficiency ?? 0}) × 0.30  +  ${data.transportation ?? 0} × 0.25  +  ${data.supplyChain ?? 0} × 0.25  +  ${data.waste ?? 0} × 0.20]  =  ${score}`
+    );
+    gap(3);
+
+    h2('Data Sources & References');
+    const refs = [
+      'U.S. Environmental Protection Agency — eGRID 2023, Supply Chain GHG Emission Factors v1.3',
+      'Intergovernmental Panel on Climate Change (IPCC) — Sixth Assessment Report (AR6), 2021',
+      'International Energy Agency (IEA) — World Energy Outlook 2023',
+      'Science Based Targets initiative (SBTi) — Corporate Net-Zero Standard v1.1',
+      'International Maritime Organization (IMO) — Fourth GHG Study, 2023',
+      'ICAO — Carbon Emissions Calculator Methodology, Edition 12',
+      'U.S. Securities and Exchange Commission — Climate-Related Disclosures Final Rule, 2024',
+      'European Commission — Corporate Sustainability Reporting Directive (CSRD), 2023',
+    ];
+    refs.forEach(r => {
+      checkPage(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...SUBTLE);
+      doc.text(`• ${r}`, mL + 2, y);
+      y += 6;
+    });
+
+    gap(3);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...SUBTLE);
+    doc.text(
+      'All figures in this report are estimates based on the data provided and publicly available emissions factors. They are intended for internal sustainability planning and benchmarking purposes only.',
+      mL, y, { maxWidth: cW }
     );
 
     // ── PAGE NUMBERS ──────────────────────────────────────────
