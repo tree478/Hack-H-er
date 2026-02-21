@@ -1,5 +1,11 @@
 // GreenPromise — API Configuration
-// Replace the value below with your Anthropic API key.
+// Replace the values below with your API keys.
+// If left as placeholders, the app will use rule-based categorization only.
+
+// Anthropic Claude — used for CSV expense categorization
 // Get one at: https://console.anthropic.com/
-// If left as-is, the app will use rule-based categorization only (still fully functional).
-const ANTHROPIC_API_KEY = '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';
+const ANTHROPIC_API_KEY = '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';
+
+// Google Gemini — used for PDF extraction and image/receipt parsing
+// Get one at: https://aistudio.google.com/apikey
+const GEMINI_API_KEY = 'AIzaSyBD19X1lwGHPZjOx_nmBy5_9Aw3O1WiZHY';
