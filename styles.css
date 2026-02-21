@@ -599,3 +599,298 @@ img {
 .outcome-card:nth-child(4) { transition-delay: 0.3s; }
 .outcome-card:nth-child(5) { transition-delay: 0.4s; }
 .outcome-card:nth-child(6) { transition-delay: 0.5s; }
+
+/* ============================================
+   Outcomes Page
+   ============================================ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.outcomes-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 2rem 5rem;
+}
+
+.outcomes-page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.outcomes-page-title {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 0.75rem;
+}
+
+.outcomes-page-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── Shared section & card ─────────────────── */
+.oc-section {
+  margin-bottom: 2rem;
+}
+
+.oc-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 2rem 2.5rem;
+  border: 1px solid rgba(160, 139, 118, 0.1);
+}
+
+.oc-card-heading {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* ── Gauge ─────────────────────────────────── */
+.gauge-section {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+
+#gaugeCanvas {
+  display: block;
+  width: min(440px, 100%);
+  height: auto;
+  margin: 0 auto;
+}
+
+/* ── Summary ────────────────────────────────── */
+.summary-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.summary-text strong {
+  color: var(--brown-dark);
+  font-weight: 600;
+}
+
+/* ── Pie Chart ──────────────────────────────── */
+.chart-container {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  max-width: 100%;
+  margin: 0 auto 1.5rem;
+}
+
+.chart-caption {
+  font-size: 0.92rem;
+  color: var(--text-light);
+  font-style: italic;
+  text-align: center;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ── Suggestions ────────────────────────────── */
+.suggestions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.suggestions-list li {
+  position: relative;
+  padding: 0.9rem 0 0.9rem 1.8rem;
+  font-size: 0.95rem;
+  line-height: 1.72;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--cream-dark);
+}
+
+.suggestions-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.suggestions-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.25rem;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.suggestions-list li strong {
+  color: var(--brown-dark);
+  font-weight: 600;
+}
+
+/* ── Timeline ───────────────────────────────── */
+.timeline {
+  position: relative;
+  padding-left: 52px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: var(--green-pale);
+  border-radius: 1px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.75rem;
+  opacity: 0;
+  transform: translateX(-14px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.timeline-item.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-node {
+  position: absolute;
+  left: -43px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 3px solid var(--green-pale);
+  box-sizing: border-box;
+}
+
+.timeline-time {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--green-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.4rem;
+}
+
+.timeline-card {
+  background: var(--cream);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(160, 139, 118, 0.1);
+}
+
+.timeline-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--brown-dark);
+  margin: 0 0 0.35rem;
+}
+
+.timeline-card-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Download Section ───────────────────────── */
+.download-section {
+  text-align: center;
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+}
+
+.learn-more-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+  padding: 0.9rem 2.5rem;
+}
+
+.learn-more-btn .cta-arrow {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.download-hint {
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--text-light);
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 1024px) {
+  .chart-container {
+    width: 300px;
+    height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  .outcomes-main {
+    padding: 2.5rem 1.25rem 4rem;
+  }
+
+  .outcomes-page-title {
+    font-size: 1.9rem;
+  }
+
+  .oc-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .chart-container {
+    width: 100%;
+    height: 280px;
+  }
+
+  .timeline {
+    padding-left: 40px;
+  }
+
+  .timeline::before {
+    left: 13px;
+  }
+
+  .timeline-node {
+    left: -32px;
+  }
+
+  .learn-more-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
