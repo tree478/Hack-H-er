@@ -44,7 +44,7 @@
       <!-- Left Column: What to upload -->
       <div class="upload-info-col">
         <h2 class="upload-col-title">What you can upload</h2>
-        <p class="upload-col-desc">GreenLens accepts structured expense and emission data files. Here's what works best:</p>
+        <p class="upload-col-desc">GreenLens accepts multiple file types — upload as many as you need and we'll merge them into one analysis.</p>
 
         <div class="file-type-block">
           <div class="file-type-icon">
@@ -52,7 +52,7 @@
           </div>
           <div>
             <strong>.CSV Files</strong>
-            <span class="file-badge">Recommended</span>
+            <span class="file-badge">Best accuracy</span>
           </div>
         </div>
 
@@ -74,15 +74,29 @@
             <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#4a7c59" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#4a7c59" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span><strong>Amount</strong> — cost in dollars or local currency</span>
           </li>
-          <li>
-            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#4a7c59" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#4a7c59" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span><strong>Category</strong> — optional; we'll auto-detect if missing</span>
-          </li>
-          <li>
-            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#4a7c59" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#4a7c59" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span><strong>Quantity / Units</strong> — optional; helps carbon estimates</span>
-          </li>
         </ul>
+
+        <div class="file-type-block" style="margin-top:1.25rem;">
+          <div class="file-type-icon">
+            <svg viewBox="0 0 32 32" fill="none"><rect x="4" y="2" width="18" height="24" rx="2" stroke="#d4867e" stroke-width="1.8"/><path d="M16 2v6h6" stroke="#d4867e" stroke-width="1.8" stroke-linecap="round"/><path d="M8 12h10M8 16h10M8 20h6" stroke="#d4867e" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <strong>.PDF Statements</strong>
+            <span class="file-badge file-badge--pink">Text-based PDFs</span>
+          </div>
+        </div>
+        <p class="upload-col-sub">Bank statements, utility bills, or expense reports exported as PDF. We extract line items automatically via text parsing.</p>
+
+        <div class="file-type-block" style="margin-top:1.25rem;">
+          <div class="file-type-icon">
+            <svg viewBox="0 0 32 32" fill="none"><rect x="3" y="3" width="26" height="26" rx="3" stroke="#a08b76" stroke-width="1.8"/><circle cx="11" cy="11" r="2.5" fill="#a08b76"/><path d="M3 21l7-6 5 5 4-4 8 7" stroke="#a08b76" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <strong>Photos &amp; Screenshots</strong>
+            <span class="file-badge file-badge--brown">JPG / PNG</span>
+          </div>
+        </div>
+        <p class="upload-col-sub">Receipts, invoices, or screenshots of expense reports. Our AI vision model reads and extracts the data for you.</p>
 
         <div class="emission-categories">
           <p class="upload-col-sub" style="margin-bottom:0.75rem;">We categorize into 5 emission types:</p>
@@ -99,7 +113,9 @@
       <!-- Right Column: Upload Box -->
       <div class="upload-action-col">
         <div class="upload-box" id="dropZone">
-          <div class="upload-box-inner">
+
+          <!-- Default drop state -->
+          <div class="upload-box-inner" id="uploadBoxInner">
             <div class="upload-icon-wrap">
               <svg viewBox="0 0 64 64" fill="none">
                 <circle cx="32" cy="32" r="30" stroke="#d6e8d4" stroke-width="2"/>
@@ -108,21 +124,27 @@
                 <path d="M20 46h24" stroke="#4a7c59" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
-            <p class="drop-title">Drag &amp; drop your CSV here</p>
+            <p class="drop-title">Drag &amp; drop files here</p>
+            <p class="drop-sub-types">CSV &nbsp;·&nbsp; PDF &nbsp;·&nbsp; JPG &nbsp;·&nbsp; PNG</p>
             <p class="drop-or">— or —</p>
             <label class="browse-btn" for="fileInput">Browse files</label>
-            <input type="file" id="fileInput" accept=".csv" hidden>
+            <input type="file" id="fileInput" accept=".csv,.pdf,.jpg,.jpeg,.png,.webp" multiple hidden>
             <p class="drop-hint">Upload your expense or emission data for a<br><strong>business-specific sustainability study &amp; action plan</strong></p>
           </div>
 
-          <!-- File selected state -->
-          <div class="file-selected" id="fileSelected" hidden>
-            <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#4a7c59" stroke-width="1.8"/><path d="M14 2v6h6M9 13l2 2 4-4" stroke="#4a7c59" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span id="fileNameDisplay">filename.csv</span>
-            <button class="remove-file" id="removeFile" title="Remove file">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="#7a6452" stroke-width="1.8" stroke-linecap="round"/></svg>
-            </button>
+          <!-- File Queue (shown after files are added) -->
+          <div class="file-queue" id="fileQueue" hidden>
+            <div class="file-queue-header">
+              <span class="file-queue-count" id="fileQueueCount">0 files queued</span>
+              <button class="clear-queue-btn" id="clearQueueBtn">Clear all</button>
+            </div>
+            <ul class="file-list" id="fileList"></ul>
+            <label class="add-more-btn" for="fileInput">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Add more files
+            </label>
           </div>
+
         </div>
 
         <button class="analyze-btn" id="analyzeBtn" disabled>
@@ -146,7 +168,7 @@
     <div class="loading-card">
       <div class="spinner"></div>
       <p class="loading-title">Analyzing your data…</p>
-      <p class="loading-sub" id="loadingStatus">Parsing CSV file</p>
+      <p class="loading-sub" id="loadingStatus">Processing files…</p>
     </div>
   </div>
 
@@ -197,7 +219,7 @@
         View Full Outcomes &amp; Recommendations
         <svg class="cta-arrow" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
-      <button class="reset-btn" id="resetBtn">Upload a different file</button>
+      <button class="reset-btn" id="resetBtn">Upload different files</button>
     </div>
 
   </section>
@@ -207,7 +229,7 @@
     <p>&copy; 2026 GreenLens. Built for businesses that care about tomorrow.</p>
   </footer>
 
-  <script src="auth.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="config.js"></script>
   <script src="upload.js"></script>
 </body>

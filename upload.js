@@ -2,13 +2,19 @@
    GreenLens — Upload & Analysis Engine
    ============================================================ */
 
+// ── PDF.js worker setup
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
 // ── Emission Factors (kg CO₂ per USD spent, sourced from EPA/EEIO)
 const EMISSION_FACTORS = {
-  energy:     0.233,   // kg CO₂ per $1 on electricity/energy
-  transport:  0.181,   // kg CO₂ per $1 on transportation/fuel
-  supply:     0.142,   // kg CO₂ per $1 on supply chain/materials
-  waste:      0.098,   // kg CO₂ per $1 on waste management
-  other:      0.120,   // kg CO₂ per $1 (generic average)
+  energy:     0.233,
+  transport:  0.181,
+  supply:     0.142,
+  waste:      0.098,
+  other:      0.120,
 };
 
 // ── Category metadata
@@ -47,13 +53,12 @@ const KEYWORD_RULES = {
   supply: [
     'amazon','amazon business','staples','office depot','uline','grainger',
     'fastenal','w.w. grainger','mcmaster-carr','home depot','lowes','lowe\'s',
-    'packaging','raw material','raw materials','inventory','stock','supplies',
+    'packaging','raw material','raw materials','office supplies',
     'lumber','timber','steel','aluminum','copper','plastic','resin',
-    'fabric','textile','paper','cardboard','glass','chemical','chemicals',
-    'manufacturer','supplier','vendor','wholesale','distributor',
-    'office supplies','equipment','tools','hardware','parts','components',
-    'food supplier','produce','wholesale food','sysco','us foods','gordon food',
-    'printing','print shop','materials','manufacturing',
+    'fabric','textile','cardboard',
+    'wholesale','distributor',
+    'food supplier','wholesale food','sysco','us foods','gordon food',
+    'printing','print shop','manufacturing',
   ],
   waste: [
     'waste management','republic services','clean harbors','stericycle',
@@ -67,27 +72,29 @@ const KEYWORD_RULES = {
 };
 
 // ── DOM refs
-const dropZone        = document.getElementById('dropZone');
-const fileInput       = document.getElementById('fileInput');
-const fileSelected    = document.getElementById('fileSelected');
-const fileNameDisplay = document.getElementById('fileNameDisplay');
-const removeFileBtn   = document.getElementById('removeFile');
-const analyzeBtn      = document.getElementById('analyzeBtn');
-const uploadError     = document.getElementById('uploadError');
-const errorText       = document.getElementById('errorText');
-const retryRulesOnly  = document.getElementById('retryRulesOnly');
-const loadingOverlay  = document.getElementById('loadingOverlay');
-const loadingStatus   = document.getElementById('loadingStatus');
-const resultsSection  = document.getElementById('resultsSection');
-const summaryCards    = document.getElementById('summaryCards');
+const dropZone           = document.getElementById('dropZone');
+const uploadBoxInner     = document.getElementById('uploadBoxInner');
+const fileInput          = document.getElementById('fileInput');
+const fileQueue          = document.getElementById('fileQueue');
+const fileList           = document.getElementById('fileList');
+const fileQueueCount     = document.getElementById('fileQueueCount');
+const clearQueueBtn      = document.getElementById('clearQueueBtn');
+const analyzeBtn         = document.getElementById('analyzeBtn');
+const uploadError        = document.getElementById('uploadError');
+const errorText          = document.getElementById('errorText');
+const retryRulesOnly     = document.getElementById('retryRulesOnly');
+const loadingOverlay     = document.getElementById('loadingOverlay');
+const loadingStatus      = document.getElementById('loadingStatus');
+const resultsSection     = document.getElementById('resultsSection');
+const summaryCards       = document.getElementById('summaryCards');
 const emissionsNarrative = document.getElementById('emissionsNarrative');
-const resultsTableBody = document.getElementById('resultsTableBody');
-const tableCount      = document.getElementById('tableCount');
-const viewOutcomesBtn = document.getElementById('viewOutcomesBtn');
-const resetBtn        = document.getElementById('resetBtn');
+const resultsTableBody   = document.getElementById('resultsTableBody');
+const tableCount         = document.getElementById('tableCount');
+const viewOutcomesBtn    = document.getElementById('viewOutcomesBtn');
+const resetBtn           = document.getElementById('resetBtn');
 
-let selectedFile = null;
-let parsedRows   = [];
+let selectedFiles = [];
+let parsedRows    = [];
 
 // ── Drag & Drop
 dropZone.addEventListener('dragover', e => {
@@ -98,35 +105,22 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-ove
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFileSelect(file);
+  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
 });
 
-// ── Browse button
+// ── Browse button (supports multiple)
 fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) handleFileSelect(fileInput.files[0]);
+  if (fileInput.files.length) addFiles(fileInput.files);
+  fileInput.value = ''; // reset so same file can be re-added after removal
 });
 
-// ── Remove file
-removeFileBtn.addEventListener('click', () => {
-  selectedFile = null;
-  fileInput.value = '';
-  fileSelected.hidden = true;
-  dropZone.querySelector('.upload-box-inner').hidden = false;
-  analyzeBtn.disabled = true;
-  hideError();
-});
-
-// ── Analyze button
+// ── Clear all / Analyze / Retry / Reset
+clearQueueBtn.addEventListener('click', clearAllFiles);
 analyzeBtn.addEventListener('click', () => runAnalysis(false));
 retryRulesOnly.addEventListener('click', () => runAnalysis(true));
 resetBtn.addEventListener('click', () => {
   resultsSection.hidden = true;
-  selectedFile = null;
-  fileInput.value = '';
-  fileSelected.hidden = true;
-  dropZone.querySelector('.upload-box-inner').hidden = false;
-  analyzeBtn.disabled = true;
+  clearAllFiles();
   hideError();
   try { localStorage.removeItem('greenlens_analysis'); } catch {}
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -145,16 +139,109 @@ resetBtn.addEventListener('click', () => {
   } catch {}
 })();
 
-function handleFileSelect(file) {
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    showError('Please upload a .csv file.'); return;
+// ────────────────────────────────────────────
+// FILE QUEUE MANAGEMENT
+// ────────────────────────────────────────────
+const ACCEPTED_EXTENSIONS = ['.csv', '.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+
+function addFiles(fileListInput) {
+  let added = 0;
+  for (const file of fileListInput) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+      showError(`"${file.name}" is not supported. Please use CSV, PDF, JPG, or PNG.`);
+      continue;
+    }
+    // Skip duplicates
+    if (selectedFiles.find(f => f.name === file.name && f.size === file.size)) continue;
+    selectedFiles.push(file);
+    added++;
   }
-  selectedFile = file;
-  fileNameDisplay.textContent = file.name;
-  dropZone.querySelector('.upload-box-inner').hidden = true;
-  fileSelected.hidden = false;
-  analyzeBtn.disabled = false;
-  hideError();
+  if (added > 0) {
+    hideError();
+    renderFileQueue();
+    analyzeBtn.disabled = false;
+  }
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileQueue();
+  analyzeBtn.disabled = selectedFiles.length === 0;
+}
+
+function clearAllFiles() {
+  selectedFiles = [];
+  renderFileQueue();
+  analyzeBtn.disabled = true;
+}
+
+function renderFileQueue() {
+  if (selectedFiles.length === 0) {
+    fileQueue.hidden = true;
+    uploadBoxInner.hidden = false;
+    return;
+  }
+  uploadBoxInner.hidden = true;
+  fileQueue.hidden = false;
+  fileQueueCount.textContent =
+    `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} queued`;
+
+  fileList.innerHTML = selectedFiles.map((file, i) => `
+    <li class="file-item" id="file-item-${i}">
+      <div class="file-item-icon">${getFileTypeIcon(file.name)}</div>
+      <div class="file-item-info">
+        <span class="file-item-name">${escapeHtml(file.name)}</span>
+        ${getFileTypeBadge(file.name)}
+      </div>
+      <span class="file-item-status file-item-status--waiting" id="file-status-${i}">Waiting</span>
+      <button class="file-item-remove" onclick="removeFile(${i})" title="Remove">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="#7a6452" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </li>`).join('');
+}
+
+function updateFileStatus(index, status, message) {
+  const el = document.getElementById(`file-status-${index}`);
+  if (!el) return;
+  el.className = `file-item-status file-item-status--${status}`;
+  const labels = { waiting: 'Waiting', parsing: 'Parsing…', done: 'Done ✓', error: 'Error' };
+  el.textContent = (status === 'error' && message)
+    ? 'Error: ' + message.substring(0, 28)
+    : (labels[status] || status);
+  if (status === 'error' && message) el.title = message;
+}
+
+function getFileTypeIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    return `<svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="2" width="14" height="18" rx="2" stroke="#4a7c59" stroke-width="1.6"/>
+      <path d="M12 2v5h5" stroke="#4a7c59" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M6 11h8M6 14h5" stroke="#4a7c59" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`;
+  }
+  if (ext === 'pdf') {
+    return `<svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="2" width="14" height="18" rx="2" stroke="#d4867e" stroke-width="1.6"/>
+      <path d="M12 2v5h5" stroke="#d4867e" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M6 10h8M6 13h6M6 16h4" stroke="#d4867e" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="3" width="18" height="18" rx="2" stroke="#a08b76" stroke-width="1.6"/>
+    <circle cx="8.5" cy="8.5" r="1.5" fill="#a08b76"/>
+    <path d="M3 15l5-4 4 4 3-3 6 5" stroke="#a08b76" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function getFileTypeBadge(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'csv') return '<span class="ftype-badge ftype-badge--csv">CSV</span>';
+  if (ext === 'pdf') return '<span class="ftype-badge ftype-badge--pdf">PDF</span>';
+  return '<span class="ftype-badge ftype-badge--img">Image</span>';
 }
 
 // ────────────────────────────────────────────
@@ -166,7 +253,6 @@ function parseCSV(text) {
 
   const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
 
-  // Flexible column mapping
   const colMap = {
     date:        findCol(headers, ['date','transaction date','txn date','posted date','time']),
     vendor:      findCol(headers, ['vendor','supplier','merchant','payee','company','name','description','memo','details','expense','item']),
@@ -193,7 +279,6 @@ function parseCSV(text) {
     const amount = parseFloat(rawAmount.replace(/[^0-9.\-]/g, '')) || 0;
 
     if (amount === 0 && !vendor && !desc) continue;
-
     rows.push({ vendor, description: desc, amount: Math.abs(amount), date: rawDate.replace(/['"]/g, '').trim(), raw: cells });
   }
 
@@ -224,6 +309,278 @@ function findCol(headers, candidates) {
 }
 
 // ────────────────────────────────────────────
+// PDF PARSER (PDF.js)
+// ────────────────────────────────────────────
+async function parsePDF(file) {
+  if (typeof pdfjsLib === 'undefined') {
+    throw new Error('PDF.js library failed to load. Please refresh and try again.');
+  }
+
+  const arrayBuffer = await readFileAsArrayBuffer(file);
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let fullText = '';
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    fullText += content.items.map(item => item.str).join(' ') + '\n';
+  }
+
+  // Scanned PDFs produce very little extractable text
+  if (fullText.replace(/\s/g, '').length < 40) {
+    throw new Error(
+      'This PDF appears to be a scanned image. Save it as a JPG/PNG and re-upload to use the image parser.'
+    );
+  }
+
+  // Prefer AI extraction — it returns proper categories and handles any PDF layout.
+  // Fall back to regex only if there's no API key.
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (apiKey && apiKey !== 'your-api-key-here') {
+    return await aiExtractFromText(fullText);
+  }
+
+  // No API key: try regex parsing as a last resort
+  const rows = extractRowsFromText(fullText);
+  if (rows.length === 0) {
+    throw new Error('No expense line items found in this PDF. Add an API key to config.js for better parsing.');
+  }
+  return rows;
+}
+
+function extractRowsFromText(text) {
+  const rows = [];
+  const lines = text.split(/\n/);
+
+  const dollarPattern  = /\$\s*(\d{1,6}(?:,\d{3})*(?:\.\d{2})?)/;
+  const numericPattern = /\b(\d{1,6}(?:,\d{3})*\.\d{2})\b/;
+  const datePattern    = /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{2}[\/\-]\d{2})\b/;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length < 4) continue;
+
+    let amountStr = null;
+    let amount = 0;
+
+    const dollarMatch = trimmed.match(dollarPattern);
+    if (dollarMatch) {
+      amountStr = dollarMatch[0];
+      amount = parseFloat(dollarMatch[1].replace(/,/g, ''));
+    } else {
+      const numMatch = trimmed.match(numericPattern);
+      if (numMatch) {
+        amountStr = numMatch[0];
+        amount = parseFloat(numMatch[1].replace(/,/g, ''));
+      }
+    }
+
+    if (!amount || amount <= 0 || amount > 500000) continue;
+
+    const dateMatch = trimmed.match(datePattern);
+    const date = dateMatch ? dateMatch[0] : '';
+
+    // Vendor = line with amount and date removed, cleaned up
+    let vendor = trimmed
+      .replace(amountStr, '')
+      .replace(date, '')
+      .replace(/[,$]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Strip common non-vendor prefixes
+    vendor = vendor.replace(/^(total|subtotal|balance|tax|tip|due|amount|payment|charge|fee|credit|debit)\b\s*/i, '').trim();
+
+    if (!vendor || vendor.length < 2) continue;
+
+    rows.push({
+      vendor:      vendor.substring(0, 80),
+      description: vendor.substring(0, 80),
+      amount,
+      date,
+      raw: [trimmed],
+    });
+  }
+
+  return rows;
+}
+
+// ────────────────────────────────────────────
+// AI TEXT EXTRACTOR — PDF fallback
+// Handles sustainability reports, CO₂ tables, and any non-standard PDF layout
+// ────────────────────────────────────────────
+async function aiExtractFromText(text) {
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    throw new Error('An API key is required to parse this PDF format. Add your key to config.js.');
+  }
+
+  // Trim to ~6 000 chars to stay within token limits while covering most single-page reports
+  const excerpt = text.length > 6000 ? text.substring(0, 6000) + '\n[truncated]' : text;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are a sustainability data extractor. Given text from any business document (sustainability report, expense table, invoice, financial statement), extract every emission or expense line item.
+
+For each item return a JSON object with:
+- vendor: the category, company, or item name (string)
+- description: a brief description of the item (string)
+- amount: the cost in USD (number, 0 if no dollar value given)
+- co2_kg: the CO₂ equivalent in kilograms (number; convert tonnes → kg by × 1000; 0 if not given)
+- category: exactly one of: energy, transport, supply, waste, or other
+  - energy: electricity, gas utilities, power companies, solar, HVAC, lighting
+  - transport: fuel, shipping carriers, freight, flights, vehicle costs, delivery
+  - supply: raw materials, office supplies, packaging, manufacturing inputs
+  - waste: waste disposal, recycling, sanitation, cleaning
+  - other: anything that does not clearly fit above
+- confidence: high, medium, or low
+- date: date string if present, otherwise ""
+
+Return ONLY a valid JSON array. No markdown, no explanation, just the raw JSON array.`,
+      messages: [{
+        role: 'user',
+        content: `Extract all emission and expense items from this document:\n\n${excerpt}`,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`AI PDF extraction failed (${response.status}): ${err}`);
+  }
+
+  const data    = await response.json();
+  const rawText = data.content[0].text.trim();
+
+  let items;
+  try {
+    const match = rawText.match(/\[[\s\S]*\]/);
+    items = JSON.parse(match ? match[0] : rawText);
+  } catch {
+    throw new Error('AI could not structure the PDF contents. Check that the file contains recognizable data.');
+  }
+
+  const validCategories = ['energy', 'transport', 'supply', 'waste', 'other'];
+
+  const rows = items
+    .filter(item => item.vendor || item.description)
+    .map(item => {
+      const co2kg  = Math.abs(parseFloat(item.co2_kg)  || 0);
+      const amount = Math.abs(parseFloat(item.amount)  || 0);
+      const rawCat = String(item.category || '').toLowerCase().trim();
+      const category = validCategories.includes(rawCat) ? rawCat : null;
+      return {
+        vendor:      String(item.vendor      || '').trim().substring(0, 80),
+        description: String(item.description || item.vendor || '').trim().substring(0, 80),
+        amount,
+        date:        String(item.date || '').trim(),
+        co2kg,
+        directCo2:   co2kg > 0,
+        category,
+        confidence:  item.confidence || 'medium',
+        raw:         [],
+      };
+    });
+
+  if (rows.length === 0) {
+    throw new Error('No recognizable data found in this PDF. Ensure it contains emission or expense information.');
+  }
+  return rows;
+}
+
+// ────────────────────────────────────────────
+// IMAGE / RECEIPT PARSER (Claude Vision)
+// ────────────────────────────────────────────
+async function parseImage(file) {
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error(`"${file.name}" is too large (max 5 MB). Please compress the image and try again.`);
+  }
+
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    throw new Error('An API key is required to parse image files. Add your key to config.js.');
+  }
+
+  const base64    = await readFileAsBase64(file);
+  const mediaType = file.type || 'image/jpeg';
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are a receipt and invoice parser. Extract all expense line items from the image provided. Return ONLY a valid JSON array. Each element must have: vendor (string), description (string), amount (number in USD, positive), date (string, empty if not visible), category (exactly one of: energy, transport, supply, waste, or other — energy = electricity/gas utilities/power; transport = fuel/shipping/freight/delivery; supply = materials/office supplies/packaging; waste = disposal/recycling/sanitation; other = anything else), confidence (high/medium/low). No explanations, no markdown — only the raw JSON array.`,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 },
+          },
+          {
+            type: 'text',
+            text: 'Extract all expense line items from this receipt or document.',
+          },
+        ],
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Vision API error ${response.status}: ${err}`);
+  }
+
+  const data    = await response.json();
+  const rawText = data.content[0].text.trim();
+
+  let items;
+  try {
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    items = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+  } catch {
+    throw new Error('Could not parse image contents. The receipt may be unclear or contain no expense data.');
+  }
+
+  const imgValidCats = ['energy', 'transport', 'supply', 'waste', 'other'];
+
+  const rows = items
+    .filter(item => parseFloat(item.amount) > 0)
+    .map(item => {
+      const rawCat = String(item.category || '').toLowerCase().trim();
+      return {
+        vendor:      String(item.vendor      || '').trim().substring(0, 80),
+        description: String(item.description || item.vendor || '').trim().substring(0, 80),
+        amount:      Math.abs(parseFloat(item.amount) || 0),
+        date:        String(item.date || '').trim(),
+        category:    imgValidCats.includes(rawCat) ? rawCat : null,
+        confidence:  item.confidence || 'medium',
+        raw:         [],
+      };
+    });
+
+  if (rows.length === 0) {
+    throw new Error('No expense items found in this image. Ensure it shows a receipt or financial document.');
+  }
+  return rows;
+}
+
+// ────────────────────────────────────────────
 // RULE-BASED CATEGORIZER
 // ────────────────────────────────────────────
 function ruleBasedCategory(vendor, description) {
@@ -245,7 +602,9 @@ async function aiCategorize(unknownRows) {
     return unknownRows.map(r => ({ ...r, category: 'other', confidence: 'low' }));
   }
 
-  const payload = unknownRows.map((r, i) => `${i + 1}. Vendor: "${r.vendor}" | Description: "${r.description}" | Amount: $${r.amount.toFixed(2)}`).join('\n');
+  const payload = unknownRows
+    .map((r, i) => `${i + 1}. Vendor: "${r.vendor}" | Description: "${r.description}" | Amount: $${r.amount.toFixed(2)}`)
+    .join('\n');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -276,7 +635,7 @@ No extra text, no markdown, just the raw JSON array.`,
     throw new Error(`AI API error ${response.status}: ${err}`);
   }
 
-  const data = await response.json();
+  const data    = await response.json();
   const rawText = data.content[0].text.trim();
 
   let parsed;
@@ -301,31 +660,60 @@ No extra text, no markdown, just the raw JSON array.`,
 // MAIN ANALYSIS PIPELINE
 // ────────────────────────────────────────────
 async function runAnalysis(rulesOnly = false) {
+  if (selectedFiles.length === 0) return;
   hideError();
   resultsSection.hidden = true;
-  showLoading('Parsing CSV file…');
 
-  let rawText;
-  try {
-    rawText = await readFileAsText(selectedFile);
-  } catch (e) {
-    hideLoading(); showError('Could not read the file. ' + e.message); return;
+  const total = selectedFiles.length;
+  showLoading(`Processing ${total} file${total > 1 ? 's' : ''}…`);
+
+  const allRawRows = [];
+
+  for (let i = 0; i < selectedFiles.length; i++) {
+    const file = selectedFiles[i];
+    const ext  = file.name.split('.').pop().toLowerCase();
+
+    updateFileStatus(i, 'parsing');
+    setLoadingStatus(`Parsing "${file.name}" (${i + 1} of ${total})…`);
+
+    try {
+      let rows = [];
+      if (ext === 'csv') {
+        rows = parseCSV(await readFileAsText(file));
+      } else if (ext === 'pdf') {
+        rows = await parsePDF(file);
+      } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+        rows = await parseImage(file);
+      }
+      allRawRows.push(...rows);
+      updateFileStatus(i, 'done');
+    } catch (e) {
+      updateFileStatus(i, 'error', e.message);
+      // Non-fatal: continue processing remaining files
+    }
   }
 
-  let rows;
-  try {
-    rows = parseCSV(rawText);
-  } catch (e) {
-    hideLoading(); showError(e.message); return;
+  if (allRawRows.length === 0) {
+    hideLoading();
+    showError('No valid expense data could be extracted from any of the uploaded files.');
+    return;
   }
 
   setLoadingStatus('Categorizing expenses…');
 
-  // First pass: rule-based
   const categorized = [];
   const needsAI     = [];
 
-  for (const row of rows) {
+  for (const row of allRawRows) {
+    // Rows that already have a category from AI extraction (PDF/image parsers) skip rule matching
+    if (row.category) {
+      categorized.push({
+        ...row,
+        confidence: row.confidence || 'medium',
+      });
+      continue;
+    }
+    // Rule-based first pass for CSV rows and uncategorized rows
     const match = ruleBasedCategory(row.vendor, row.description);
     if (match) {
       categorized.push({ ...row, category: match.category, confidence: 'rule' });
@@ -349,10 +737,12 @@ async function runAnalysis(rulesOnly = false) {
     needsAI.forEach(r => categorized.push({ ...r, category: 'other', confidence: 'low' }));
   }
 
-  // Add CO₂ estimates
+  // Add CO₂ estimates — preserve values extracted directly from reports
   const finalRows = categorized.map(row => ({
     ...row,
-    co2kg: +(row.amount * (EMISSION_FACTORS[row.category] || EMISSION_FACTORS.other)).toFixed(2),
+    co2kg: (row.directCo2 && row.co2kg > 0)
+      ? +row.co2kg.toFixed(2)
+      : +(row.amount * (EMISSION_FACTORS[row.category] || EMISSION_FACTORS.other)).toFixed(2),
   }));
 
   parsedRows = finalRows;
@@ -375,7 +765,6 @@ function renderResults(rows) {
   const totalAmount = rows.reduce((s, r) => s + r.amount, 0);
   const totalCO2    = rows.reduce((s, r) => s + r.co2kg, 0);
 
-  // Aggregate by category
   const byCategory = {};
   for (const cat of Object.keys(CATEGORIES)) {
     byCategory[cat] = { amount: 0, co2: 0, count: 0 };
@@ -387,16 +776,14 @@ function renderResults(rows) {
     byCategory[cat].count  += 1;
   }
 
-  // Summary banner text
   document.getElementById('resultsSummaryText').textContent =
     `Analyzed ${rows.length} expense${rows.length !== 1 ? 's' : ''} totaling ${formatCurrency(totalAmount)} — estimated ${formatCO2(totalCO2)} of CO₂ equivalent.`;
 
-  // Summary cards
   summaryCards.innerHTML = '';
   for (const [catKey, meta] of Object.entries(CATEGORIES)) {
     const d = byCategory[catKey];
     if (d.count === 0) continue;
-    const co2Pct  = totalCO2    > 0 ? Math.round((d.co2    / totalCO2)    * 100) : 0;
+    const co2Pct   = totalCO2    > 0 ? Math.round((d.co2    / totalCO2)    * 100) : 0;
     const spendPct = totalAmount > 0 ? Math.round((d.amount / totalAmount) * 100) : 0;
     summaryCards.innerHTML += `
       <div class="summary-card summary-card--${meta.color}">
@@ -413,12 +800,10 @@ function renderResults(rows) {
       </div>`;
   }
 
-  // Narrative
-  const topCat = Object.entries(byCategory).sort((a, b) => b[1].co2 - a[1].co2)[0];
+  const topCat  = Object.entries(byCategory).sort((a, b) => b[1].co2 - a[1].co2)[0];
   const topMeta = CATEGORIES[topCat[0]];
   emissionsNarrative.innerHTML = buildNarrative(rows, byCategory, totalAmount, totalCO2, topCat[0], topMeta);
 
-  // Table
   resultsTableBody.innerHTML = '';
   tableCount.textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''}`;
   for (const row of rows) {
@@ -493,6 +878,24 @@ function readFileAsText(file) {
   });
 }
 
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('FileReader error'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = () => reject(new Error('FileReader error'));
+    reader.readAsDataURL(file);
+  });
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function showLoading(msg) {
@@ -517,11 +920,13 @@ function formatCO2(kg) {
   return kg.toFixed(1) + ' kg';
 }
 function confidenceLabel(c) {
-  if (c === 'rule') return 'Matched';
-  if (c === 'high') return 'High';
+  if (c === 'rule')   return 'Matched';
+  if (c === 'high')   return 'High';
   if (c === 'medium') return 'Medium';
   return 'Low';
 }
 function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
