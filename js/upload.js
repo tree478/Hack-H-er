@@ -1,5 +1,5 @@
 /* ============================================================
-   GreenLens — Upload & Analysis Engine
+   GreenPromise — Upload & Analysis Engine
    ============================================================ */
 
 // ── PDF.js worker setup
@@ -122,14 +122,14 @@ resetBtn.addEventListener('click', () => {
   resultsSection.hidden = true;
   clearAllFiles();
   hideError();
-  try { localStorage.removeItem('greenlens_analysis'); } catch {}
+  try { localStorage.removeItem('greenpromise_analysis'); } catch {}
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 // ── Restore previous results on page load
 (function restoreFromLocalStorage() {
   try {
-    const saved = localStorage.getItem('greenlens_analysis');
+    const saved = localStorage.getItem('greenpromise_analysis');
     if (!saved) return;
     const data = JSON.parse(saved);
     if (!data.rows || data.rows.length === 0) return;
@@ -863,7 +863,7 @@ function saveToLocalStorage(rows) {
     totalCO2    += row.co2kg;
   }
   const payload = { rows, summary, totalAmount, totalCO2, analyzedAt: new Date().toISOString() };
-  try { localStorage.setItem('greenlens_analysis', JSON.stringify(payload)); } catch {}
+  try { localStorage.setItem('greenpromise_analysis', JSON.stringify(payload)); } catch {}
 }
 
 // ────────────────────────────────────────────
