@@ -40,12 +40,59 @@ function calculateScore(data) {
 
 
 /* =============================================
-   Demo Data  (wire AI API responses here later)
+   Data — reads from upload.js localStorage payload
    ============================================= */
 
+function transformAnalysisData(analysis) {
+  const { summary, totalCO2, totalAmount } = analysis;
+  if (!summary || !totalCO2) return null;
+
+  const energyCO2    = (summary.energy    || {}).co2 || 0;
+  const transportCO2 = (summary.transport || {}).co2 || 0;
+  const supplyCO2    = (summary.supply    || {}).co2 || 0;
+  const wasteCO2     = (summary.waste     || {}).co2 || 0;
+  const otherCO2     = (summary.other     || {}).co2 || 0;
+
+  const pct = v => totalCO2 > 0 ? Math.round((v / totalCO2) * 100) : 0;
+
+  const energyPct    = pct(energyCO2);
+  const transportPct = pct(transportCO2);
+  const supplyPct    = pct(supplyCO2);
+  const wastePct     = pct(wasteCO2);
+  const otherPct     = pct(otherCO2);
+
+  const categories = [
+    { label: 'Energy Efficiency',    value: energyPct,    color: '#4a7c59' },
+    { label: 'Transportation Impact', value: transportPct, color: '#d4867e' },
+    { label: 'Supply Chain',          value: supplyPct,    color: '#a08b76' },
+    { label: 'Waste',                 value: wastePct,     color: '#7a6452' },
+    { label: 'Other',                 value: otherPct,     color: '#b0b0b0' },
+  ].filter(c => c.value > 0);
+
+  return {
+    companyName:       'Your Business',
+    // energyEfficiency is inverted: lower energy CO₂ share = more efficient
+    energyEfficiency:  Math.round(100 - energyPct),
+    transportation:    transportPct,
+    supplyChain:       supplyPct,
+    waste:             wastePct,
+    emissionsPerRevenue: null,
+    totalCO2,
+    totalAmount,
+    categories,
+  };
+}
+
 function getOutcomesData() {
-  const stored = localStorage.getItem('greenlensData');
-  if (stored) { try { return JSON.parse(stored); } catch (_) {} }
+  // Primary: read what upload.js saves
+  const analysisRaw = localStorage.getItem('greenlens_analysis');
+  if (analysisRaw) {
+    try {
+      const transformed = transformAnalysisData(JSON.parse(analysisRaw));
+      if (transformed) return transformed;
+    } catch (_) {}
+  }
+  // Fallback: demo data so page always shows something
   return {
     companyName: 'Your Business',
     energyEfficiency: 65,
@@ -54,11 +101,11 @@ function getOutcomesData() {
     waste: 50,
     emissionsPerRevenue: null,
     categories: [
-      { label: 'Energy Efficiency',    value: 35, color: '#f5d5d1' },
+      { label: 'Energy Efficiency',    value: 35, color: '#4a7c59' },
       { label: 'Transportation Impact', value: 25, color: '#d4867e' },
       { label: 'Supply Chain',          value: 20, color: '#a08b76' },
       { label: 'Waste',                 value: 15, color: '#7a6452' },
-      { label: 'Other',                 value: 5,  color: '#5a4635' },
+      { label: 'Other',                 value: 5,  color: '#b0b0b0' },
     ],
   };
 }
@@ -183,21 +230,29 @@ async function animateGauge(score) {
  * @param {Array}  cats   - [{label, value}]
  * @returns {string} HTML
  */
-function generateSummary(label, cats) {
+function generateSummary(label, cats, data) {
   const sorted = [...cats].sort((a, b) => b.value - a.value);
   const [t1, t2] = sorted;
+  const co2Line = (data && data.totalCO2)
+    ? ` Your uploaded expenses are estimated to produce <strong>${formatCO2kg(data.totalCO2)}</strong> of CO₂ equivalent in total.`
+    : '';
   return (
     `Your business currently holds a <strong>${label}</strong> sustainability rating, ` +
-    `reflecting meaningful room for improvement across key operational areas. ` +
-    `<strong>${t1.label}</strong> and <strong>${t2.label}</strong> are your two largest contributors, ` +
-    `together accounting for roughly <strong>${t1.value + t2.value}%</strong> of your estimated total carbon footprint. ` +
+    `reflecting meaningful room for improvement across key operational areas.${co2Line} ` +
+    `<strong>${t1.label}</strong> and <strong>${t2 ? t2.label : 'Other'}</strong> are your two largest contributors, ` +
+    `together accounting for roughly <strong>${t1.value + (t2 ? t2.value : 0)}%</strong> of your estimated total carbon footprint. ` +
     `These areas represent your highest-priority opportunities and are the primary focus of the recommendations below.`
   );
 }
 
-function renderSummary(score, cats) {
+function formatCO2kg(kg) {
+  if (kg >= 1000) return (kg / 1000).toFixed(2) + ' tonnes';
+  return kg.toFixed(1) + ' kg';
+}
+
+function renderSummary(score, cats, data) {
   const el = document.getElementById('summaryText');
-  if (el) el.innerHTML = generateSummary(getScoreLabel(score), cats);
+  if (el) el.innerHTML = generateSummary(getScoreLabel(score), cats, data);
 }
 
 
@@ -293,7 +348,17 @@ function generateSuggestions(cats) {
 function renderSuggestions(cats) {
   const list = document.getElementById('suggestionsList');
   if (!list) return;
-  list.innerHTML = generateSuggestions(cats)
+
+  // Sort all suggestions so that areas matching the user's top categories appear first
+  const topAreas = [...cats].sort((a, b) => b.value - a.value).map(c => c.label.toLowerCase());
+  const allSuggestions = generateSuggestions(cats);
+  const ranked = allSuggestions.sort((a, b) => {
+    const ai = topAreas.findIndex(t => a.area.toLowerCase().includes(t.split(' ')[0]));
+    const bi = topAreas.findIndex(t => b.area.toLowerCase().includes(t.split(' ')[0]));
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  list.innerHTML = ranked
     .map(s => `<li><strong>${s.area}:</strong> ${s.text}</li>`)
     .join('');
 }
@@ -665,7 +730,7 @@ function initOutcomesPage() {
   const score = calculateScore(data);
 
   animateGauge(score);
-  renderSummary(score, data.categories);
+  renderSummary(score, data.categories, data);
   renderPieChart(data.categories);
   renderSuggestions(data.categories);
   renderTimeline(data.milestones);

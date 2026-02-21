@@ -291,7 +291,7 @@ No extra text, no markdown, just the raw JSON array.`,
     const aiResult = parsed.find(p => p.index === i + 1);
     return {
       ...row,
-      category:   aiResult ? aiResult.category : 'other',
+      category:   aiResult ? aiResult.category.toLowerCase().trim() : 'other',
       confidence: aiResult ? aiResult.confidence : 'low',
     };
   });
@@ -396,18 +396,19 @@ function renderResults(rows) {
   for (const [catKey, meta] of Object.entries(CATEGORIES)) {
     const d = byCategory[catKey];
     if (d.count === 0) continue;
-    const pct = totalAmount > 0 ? ((d.amount / totalAmount) * 100).toFixed(1) : '0';
+    const co2Pct  = totalCO2    > 0 ? Math.round((d.co2    / totalCO2)    * 100) : 0;
+    const spendPct = totalAmount > 0 ? Math.round((d.amount / totalAmount) * 100) : 0;
     summaryCards.innerHTML += `
       <div class="summary-card summary-card--${meta.color}">
         <div class="summary-card-icon">${meta.emoji}</div>
         <div class="summary-card-body">
           <p class="summary-cat-label">${meta.label}</p>
           <p class="summary-amount">${formatCurrency(d.amount)}</p>
-          <p class="summary-pct">${pct}% of spend</p>
+          <p class="summary-pct">${spendPct}% of spend &nbsp;·&nbsp; <strong>${co2Pct}% of CO₂</strong></p>
           <p class="summary-co2">${formatCO2(d.co2)} CO₂e</p>
         </div>
         <div class="summary-bar-wrap">
-          <div class="summary-bar" style="width:${pct}%"></div>
+          <div class="summary-bar" style="width:${co2Pct}%"></div>
         </div>
       </div>`;
   }
