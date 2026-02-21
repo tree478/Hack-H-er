@@ -1,5 +1,5 @@
 /* ============================================================
-   GreenLens — Upload & Analysis Engine
+   GreenPromise — Upload & Analysis Engine
    ============================================================ */
 
 // ── PDF.js worker setup

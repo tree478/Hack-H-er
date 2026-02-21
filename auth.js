@@ -1,5 +1,5 @@
 /* =============================================
-   GreenLens — auth.js
+   GreenPromise — auth.js
    Authentication & History Management
    (localStorage-backed, frontend-only)
    ============================================= */
