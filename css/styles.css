@@ -2310,8 +2310,9 @@ img {
 }
 
 /* ============================================
-   Nav — Auth Buttons (Join / History / Logout)
+   Nav — Auth Buttons (Join / Profile)
    ============================================ */
+
 .nav-btn--join {
   background: var(--green);
   border-color: var(--green);
