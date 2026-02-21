@@ -153,30 +153,34 @@ function glRestoreAnalysis(entry) {
   return true;
 }
 
-/* ── Dynamic nav injection ─────────────────── */
+/* ── Nav auth button update ─────────────────── */
+/*
+ * Every page hard-codes a <a class="nav-auth-btn"> as its rightmost
+ * nav link (defaults to "Join the Green"). We update it here once the
+ * DOM is available — no injection, no innerHTML, just attribute changes.
+ */
 
 function glUpdateNav() {
-  const user     = glGetCurrentUser();
-  const isJoin   = window.location.pathname.includes('join.html');
-  const isHistory= window.location.pathname.includes('history.html');
+  const user      = glGetCurrentUser();
+  const path      = window.location.pathname;
+  const isHistory = path.includes('history.html');
+  const isJoin    = path.includes('join.html');
 
-  document.querySelectorAll('.header-nav').forEach(nav => {
-    nav.querySelectorAll('.gl-auth-nav').forEach(el => el.remove());
-
+  document.querySelectorAll('.nav-auth-btn').forEach(btn => {
     if (user) {
-      const profileLink = document.createElement('a');
-      profileLink.href      = 'history.html';
-      profileLink.className = 'nav-btn nav-btn--join gl-auth-nav' + (isHistory ? ' nav-btn--active' : '');
-      profileLink.textContent = 'Profile';
-      nav.appendChild(profileLink);
+      btn.textContent = 'Profile';
+      btn.href        = 'history.html';
+      btn.classList.add('nav-btn--join');
+      btn.classList.toggle('nav-btn--active', isHistory);
     } else {
-      const joinLink = document.createElement('a');
-      joinLink.href      = 'join.html';
-      joinLink.className = 'nav-btn nav-btn--join gl-auth-nav' + (isJoin ? ' nav-btn--active' : '');
-      joinLink.textContent = 'Join the Green';
-      nav.appendChild(joinLink);
+      btn.textContent = 'Join the Green';
+      btn.href        = 'join.html';
+      btn.classList.add('nav-btn--join');
+      btn.classList.toggle('nav-btn--active', isJoin);
     }
   });
 }
 
-document.addEventListener('DOMContentLoaded', glUpdateNav);
+/* Run immediately — the button is already in the DOM (hardcoded HTML),
+   so no need to wait for DOMContentLoaded. */
+glUpdateNav();
