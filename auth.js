@@ -153,30 +153,38 @@ function glRestoreAnalysis(entry) {
   return true;
 }
 
-/* ── Dynamic nav injection ─────────────────── */
+/* ── Nav slot injection ─────────────────────── */
+/*
+ * Each page reserves a <span class="nav-auth-slot"> as the rightmost
+ * nav item. We fill it here — guaranteed rightmost, no layout shift.
+ */
 
 function glUpdateNav() {
-  const user     = glGetCurrentUser();
-  const isJoin   = window.location.pathname.includes('join.html');
-  const isHistory= window.location.pathname.includes('history.html');
+  const user      = glGetCurrentUser();
+  const path      = window.location.pathname;
+  const isHistory = path.includes('history.html');
+  const isJoin    = path.includes('join.html');
 
-  document.querySelectorAll('.header-nav').forEach(nav => {
-    nav.querySelectorAll('.gl-auth-nav').forEach(el => el.remove());
-
+  document.querySelectorAll('.nav-auth-slot').forEach(slot => {
     if (user) {
-      const profileLink = document.createElement('a');
-      profileLink.href      = 'history.html';
-      profileLink.className = 'nav-btn nav-btn--join gl-auth-nav' + (isHistory ? ' nav-btn--active' : '');
-      profileLink.textContent = 'Profile';
-      nav.appendChild(profileLink);
+      slot.innerHTML =
+        `<a href="history.html"
+            class="nav-btn nav-btn--join${isHistory ? ' nav-btn--active' : ''}">
+           Profile
+         </a>`;
     } else {
-      const joinLink = document.createElement('a');
-      joinLink.href      = 'join.html';
-      joinLink.className = 'nav-btn nav-btn--join gl-auth-nav' + (isJoin ? ' nav-btn--active' : '');
-      joinLink.textContent = 'Join the Green';
-      nav.appendChild(joinLink);
+      slot.innerHTML =
+        `<a href="join.html"
+            class="nav-btn nav-btn--join${isJoin ? ' nav-btn--active' : ''}">
+           Join the Green
+         </a>`;
     }
   });
 }
 
-document.addEventListener('DOMContentLoaded', glUpdateNav);
+/* Run as soon as the DOM is ready — covers every load path */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', glUpdateNav);
+} else {
+  glUpdateNav();
+}
