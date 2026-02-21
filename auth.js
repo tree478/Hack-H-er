@@ -153,10 +153,11 @@ function glRestoreAnalysis(entry) {
   return true;
 }
 
-/* ── Nav slot injection ─────────────────────── */
+/* ── Nav auth button update ─────────────────── */
 /*
- * Each page reserves a <span class="nav-auth-slot"> as the rightmost
- * nav item. We fill it here — guaranteed rightmost, no layout shift.
+ * Every page hard-codes a <a class="nav-auth-btn"> as its rightmost
+ * nav link (defaults to "Join the Green"). We update it here once the
+ * DOM is available — no injection, no innerHTML, just attribute changes.
  */
 
 function glUpdateNav() {
@@ -165,26 +166,21 @@ function glUpdateNav() {
   const isHistory = path.includes('history.html');
   const isJoin    = path.includes('join.html');
 
-  document.querySelectorAll('.nav-auth-slot').forEach(slot => {
+  document.querySelectorAll('.nav-auth-btn').forEach(btn => {
     if (user) {
-      slot.innerHTML =
-        `<a href="history.html"
-            class="nav-btn nav-btn--join${isHistory ? ' nav-btn--active' : ''}">
-           Profile
-         </a>`;
+      btn.textContent = 'Profile';
+      btn.href        = 'history.html';
+      btn.classList.add('nav-btn--join');
+      btn.classList.toggle('nav-btn--active', isHistory);
     } else {
-      slot.innerHTML =
-        `<a href="join.html"
-            class="nav-btn nav-btn--join${isJoin ? ' nav-btn--active' : ''}">
-           Join the Green
-         </a>`;
+      btn.textContent = 'Join the Green';
+      btn.href        = 'join.html';
+      btn.classList.add('nav-btn--join');
+      btn.classList.toggle('nav-btn--active', isJoin);
     }
   });
 }
 
-/* Run as soon as the DOM is ready — covers every load path */
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', glUpdateNav);
-} else {
-  glUpdateNav();
-}
+/* Run immediately — the button is already in the DOM (hardcoded HTML),
+   so no need to wait for DOMContentLoaded. */
+glUpdateNav();

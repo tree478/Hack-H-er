@@ -26,10 +26,13 @@
         <a href="upload.html" class="nav-btn">Upload Data</a>
         <a href="outcomes.html" class="nav-btn nav-btn--accent">Outcomes</a>
         <a href="about.html" class="nav-btn">About Us</a>
-        <span class="nav-auth-slot"></span>
+        <a href="join.html" class="nav-btn nav-btn--join nav-btn--active nav-auth-btn">Join the Green</a>
       </nav>
     </div>
   </header>
+  <script>
+    (function(){try{var u=JSON.parse(localStorage.getItem('greenlens_current_user')||'null');var b=document.querySelector('.nav-auth-btn');if(b&&u){b.textContent='Profile';b.href='history.html';b.classList.remove('nav-btn--active');}}catch(e){}})();
+  </script>
 
   <!-- Hero Banner -->
   <section class="join-hero">

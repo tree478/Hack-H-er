@@ -2310,13 +2310,8 @@ img {
 }
 
 /* ============================================
-   Nav — Auth Slot & Buttons
+   Nav — Auth Buttons (Join / Profile)
    ============================================ */
-/* Reserved rightmost slot — collapses when empty */
-.nav-auth-slot {
-  display: contents; /* renders its child inline without adding a box */
-}
-
 
 .nav-btn--join {
   background: var(--green);
