@@ -566,10 +566,10 @@ async function claudeExtractFromText(text, anthropicKey) {
       'Content-Type': 'application/json',
       'x-api-key': anthropicKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'anthropic-dangerous-allow-browser': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 2048,
       system: PDF_SYSTEM_PROMPT,
       messages: [{
@@ -596,10 +596,10 @@ async function claudeExtractFromImage(base64, mediaType, anthropicKey) {
       'Content-Type': 'application/json',
       'x-api-key': anthropicKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'anthropic-dangerous-allow-browser': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 2048,
       system: IMAGE_SYSTEM_PROMPT,
       messages: [{
@@ -623,33 +623,33 @@ async function claudeExtractFromImage(base64, mediaType, anthropicKey) {
 }
 
 // ────────────────────────────────────────────
-// AI TEXT EXTRACTOR — PDF (Gemini primary, Claude fallback)
+// AI TEXT EXTRACTOR — PDF (Claude primary, Gemini fallback)
 // ────────────────────────────────────────────
 async function aiExtractFromText(text) {
   const geminiKey    = getGeminiKey();
   const anthropicKey = getAnthropicKey();
 
-  if (!geminiKey && !anthropicKey) {
-    throw new Error('An API key is required to parse this PDF. Add your Gemini or Anthropic key to config.js.');
+  if (!anthropicKey && !geminiKey) {
+    throw new Error('An API key is required to parse this PDF. Add your Anthropic key to config.js.');
   }
 
-  if (geminiKey) {
+  if (anthropicKey) {
     try {
-      return await geminiExtractFromText(text, geminiKey);
-    } catch (geminiErr) {
-      console.warn('Gemini PDF extraction failed, trying Claude fallback:', geminiErr.message);
-      if (anthropicKey) {
-        return await claudeExtractFromText(text, anthropicKey);
+      return await claudeExtractFromText(text, anthropicKey);
+    } catch (claudeErr) {
+      console.warn('Claude PDF extraction failed, trying Gemini fallback:', claudeErr.message);
+      if (geminiKey) {
+        return await geminiExtractFromText(text, geminiKey);
       }
-      throw geminiErr;
+      throw claudeErr;
     }
   }
 
-  return await claudeExtractFromText(text, anthropicKey);
+  return await geminiExtractFromText(text, geminiKey);
 }
 
 // ────────────────────────────────────────────
-// IMAGE / RECEIPT PARSER (Gemini primary, Claude fallback)
+// IMAGE / RECEIPT PARSER (Claude primary, Gemini fallback)
 // ────────────────────────────────────────────
 async function parseImage(file) {
   if (file.size > 5 * 1024 * 1024) {
@@ -659,26 +659,26 @@ async function parseImage(file) {
   const geminiKey    = getGeminiKey();
   const anthropicKey = getAnthropicKey();
 
-  if (!geminiKey && !anthropicKey) {
-    throw new Error('An API key is required to parse images. Add your Gemini or Anthropic key to config.js.');
+  if (!anthropicKey && !geminiKey) {
+    throw new Error('An API key is required to parse images. Add your Anthropic key to config.js.');
   }
 
   const base64    = await readFileAsBase64(file);
   const mediaType = file.type || 'image/jpeg';
 
-  if (geminiKey) {
+  if (anthropicKey) {
     try {
-      return await geminiExtractFromImage(base64, mediaType, geminiKey);
-    } catch (geminiErr) {
-      console.warn('Gemini image parsing failed, trying Claude fallback:', geminiErr.message);
-      if (anthropicKey) {
-        return await claudeExtractFromImage(base64, mediaType, anthropicKey);
+      return await claudeExtractFromImage(base64, mediaType, anthropicKey);
+    } catch (claudeErr) {
+      console.warn('Claude image parsing failed, trying Gemini fallback:', claudeErr.message);
+      if (geminiKey) {
+        return await geminiExtractFromImage(base64, mediaType, geminiKey);
       }
-      throw geminiErr;
+      throw claudeErr;
     }
   }
 
-  return await claudeExtractFromImage(base64, mediaType, anthropicKey);
+  return await geminiExtractFromImage(base64, mediaType, geminiKey);
 }
 
 // ────────────────────────────────────────────
@@ -695,7 +695,7 @@ function ruleBasedCategory(vendor, description) {
 }
 
 // ────────────────────────────────────────────
-// AI CATEGORIZER (Gemini primary, Claude fallback)
+// AI CATEGORIZER (Claude primary, Gemini fallback)
 // ────────────────────────────────────────────
 const CATEGORIZE_SYSTEM_PROMPT = `You are a sustainability analyst helping categorize business expenses by emission type.
 For each expense, assign exactly one category from: energy, transport, supply, waste, or other.
@@ -711,7 +711,7 @@ async function aiCategorize(unknownRows) {
   const geminiKey    = getGeminiKey();
   const anthropicKey = getAnthropicKey();
 
-  if (!geminiKey && !anthropicKey) {
+  if (!anthropicKey && !geminiKey) {
     return unknownRows.map(r => ({ ...r, category: 'other', confidence: 'low' }));
   }
 
@@ -720,20 +720,20 @@ async function aiCategorize(unknownRows) {
     .join('\n');
   const userMsg = `Categorize these business expenses:\n${payload}`;
 
-  // Try Gemini first
-  if (geminiKey) {
+  // Try Claude first
+  if (anthropicKey) {
     try {
-      return await geminiCategorize(unknownRows, userMsg, geminiKey);
-    } catch (geminiErr) {
-      console.warn('Gemini categorization failed, trying Claude fallback:', geminiErr.message);
-      if (anthropicKey) {
-        return await claudeCategorize(unknownRows, userMsg, anthropicKey);
+      return await claudeCategorize(unknownRows, userMsg, anthropicKey);
+    } catch (claudeErr) {
+      console.warn('Claude categorization failed, trying Gemini fallback:', claudeErr.message);
+      if (geminiKey) {
+        return await geminiCategorize(unknownRows, userMsg, geminiKey);
       }
-      throw geminiErr;
+      throw claudeErr;
     }
   }
 
-  return await claudeCategorize(unknownRows, userMsg, anthropicKey);
+  return await geminiCategorize(unknownRows, userMsg, geminiKey);
 }
 
 async function geminiCategorize(unknownRows, userMsg, geminiKey) {
@@ -779,10 +779,10 @@ async function claudeCategorize(unknownRows, userMsg, anthropicKey) {
       'Content-Type': 'application/json',
       'x-api-key': anthropicKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'anthropic-dangerous-allow-browser': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 2048,
       system: CATEGORIZE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMsg }],
