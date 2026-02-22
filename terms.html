@@ -31,7 +31,7 @@
     </div>
   </header>
   <script>
-    (function(){try{var u=JSON.parse(localStorage.getItem('greenlens_current_user')||'null');var b=document.querySelector('.nav-auth-btn');if(b&&u){b.textContent='Profile';b.href='history.html';}}catch(e){}})();
+    (function(){try{var u=JSON.parse(localStorage.getItem('greenpromise_current_user')||'null');var b=document.querySelector('.nav-auth-btn');if(b&&u){b.textContent='Profile';b.href='history.html';}}catch(e){}})();
   </script>
 
   <!-- Document -->
@@ -115,7 +115,7 @@
   <script src="js/auth.js"></script>
   <script>
     // If no pending signup, redirect to join
-    const pending = localStorage.getItem('greenlens_pending_user');
+    const pending = localStorage.getItem('greenpromise_pending_user');
     if (!pending) window.location.href = 'join.html';
 
     const checkbox  = document.getElementById('termsCheckbox');

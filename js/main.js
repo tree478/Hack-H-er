@@ -85,7 +85,7 @@ function transformAnalysisData(analysis) {
 
 function getOutcomesData() {
   // Primary: read what upload.js saves
-  const analysisRaw = localStorage.getItem('greenlens_analysis');
+  const analysisRaw = localStorage.getItem('greenpromise_analysis');
   if (analysisRaw) {
     try {
       const transformed = transformAnalysisData(JSON.parse(analysisRaw));

@@ -4,10 +4,10 @@
    (localStorage-backed, frontend-only)
    ============================================= */
 
-const GL_USERS_KEY   = 'greenlens_users';
-const GL_CURRENT_KEY = 'greenlens_current_user';
-const GL_PENDING_KEY = 'greenlens_pending_user';
-const GL_HISTORY_KEY = 'greenlens_history';
+const GL_USERS_KEY   = 'greenpromise_users';
+const GL_CURRENT_KEY = 'greenpromise_current_user';
+const GL_PENDING_KEY = 'greenpromise_pending_user';
+const GL_HISTORY_KEY = 'greenpromise_history';
 
 /* ── Storage helpers ───────────────────────── */
 function _getUsers() {
@@ -149,7 +149,7 @@ function glGetHistory() {
 
 function glRestoreAnalysis(entry) {
   if (!entry || !entry.analysis) return false;
-  localStorage.setItem('greenlens_analysis', JSON.stringify(entry.analysis));
+  localStorage.setItem('greenpromise_analysis', JSON.stringify(entry.analysis));
   return true;
 }
 
