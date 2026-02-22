@@ -334,12 +334,13 @@ async function parsePDF(file) {
   }
 
   // Prefer AI extraction — it returns proper categories and handles any PDF layout.
-  // Fall back to regex only if there are no API keys at all.
-  if (getGeminiKey() || getAnthropicKey()) {
+  // Fall back to regex only if there's no API key.
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (apiKey && apiKey !== 'your-api-key-here') {
     return await aiExtractFromText(fullText);
   }
 
-  // No API keys: try regex parsing as a last resort
+  // No API key: try regex parsing as a last resort
   const rows = extractRowsFromText(fullText);
   if (rows.length === 0) {
     throw new Error('No expense line items found in this PDF. Add an API key to config.js for better parsing.');
@@ -405,9 +406,30 @@ function extractRowsFromText(text) {
 }
 
 // ────────────────────────────────────────────
-// SHARED PROMPTS & HELPERS
+// AI TEXT EXTRACTOR — PDF fallback
+// Handles sustainability reports, CO₂ tables, and any non-standard PDF layout
 // ────────────────────────────────────────────
-const PDF_SYSTEM_PROMPT = `You are a sustainability data extractor. Given text from any business document (sustainability report, expense table, invoice, financial statement), extract every emission or expense line item.
+async function aiExtractFromText(text) {
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    throw new Error('An API key is required to parse this PDF format. Add your key to config.js.');
+  }
+
+  // Trim to ~6 000 chars to stay within token limits while covering most single-page reports
+  const excerpt = text.length > 6000 ? text.substring(0, 6000) + '\n[truncated]' : text;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are a sustainability data extractor. Given text from any business document (sustainability report, expense table, invoice, financial statement), extract every emission or expense line item.
 
 For each item return a JSON object with:
 - vendor: the category, company, or item name (string)
@@ -423,155 +445,7 @@ For each item return a JSON object with:
 - confidence: high, medium, or low
 - date: date string if present, otherwise ""
 
-Return ONLY a valid JSON array. No markdown, no explanation, just the raw JSON array.`;
-
-const IMAGE_SYSTEM_PROMPT = `You are a receipt and invoice parser. Extract all expense line items from the image provided. Return ONLY a valid JSON array. Each element must have: vendor (string), description (string), amount (number in USD, positive), date (string, empty if not visible), category (exactly one of: energy, transport, supply, waste, or other — energy = electricity/gas utilities/power; transport = fuel/shipping/freight/delivery; supply = materials/office supplies/packaging; waste = disposal/recycling/sanitation; other = anything else), confidence (high/medium/low). No explanations, no markdown — only the raw JSON array.`;
-
-const VALID_CATEGORIES = ['energy', 'transport', 'supply', 'waste', 'other'];
-
-function getGeminiKey() {
-  const k = (typeof GEMINI_API_KEY !== 'undefined') ? GEMINI_API_KEY.trim() : null;
-  return (k && k !== 'your-gemini-key-here') ? k : null;
-}
-function getAnthropicKey() {
-  const k = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
-  return (k && k !== 'your-api-key-here') ? k : null;
-}
-
-function parseJsonArray(text) {
-  let cleaned = text.trim();
-  // Strip markdown code fences that Gemini sometimes wraps around JSON
-  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-  const match = cleaned.match(/\[[\s\S]*\]/);
-  return JSON.parse(match ? match[0] : cleaned);
-}
-
-function normalizePdfRows(items) {
-  const rows = items
-    .filter(item => item.vendor || item.description)
-    .map(item => {
-      const co2kg  = Math.abs(parseFloat(item.co2_kg) || 0);
-      const amount = Math.abs(parseFloat(item.amount) || 0);
-      const rawCat = String(item.category || '').toLowerCase().trim();
-      return {
-        vendor:      String(item.vendor      || '').trim().substring(0, 80),
-        description: String(item.description || item.vendor || '').trim().substring(0, 80),
-        amount,
-        date:        String(item.date || '').trim(),
-        co2kg,
-        directCo2:   co2kg > 0,
-        category:    VALID_CATEGORIES.includes(rawCat) ? rawCat : null,
-        confidence:  item.confidence || 'medium',
-        raw:         [],
-      };
-    });
-  if (rows.length === 0) throw new Error('No recognizable data found. Ensure the file contains emission or expense information.');
-  return rows;
-}
-
-function normalizeImageRows(items) {
-  const rows = items
-    .filter(item => parseFloat(item.amount) > 0)
-    .map(item => {
-      const rawCat = String(item.category || '').toLowerCase().trim();
-      return {
-        vendor:      String(item.vendor      || '').trim().substring(0, 80),
-        description: String(item.description || item.vendor || '').trim().substring(0, 80),
-        amount:      Math.abs(parseFloat(item.amount) || 0),
-        date:        String(item.date || '').trim(),
-        category:    VALID_CATEGORIES.includes(rawCat) ? rawCat : null,
-        confidence:  item.confidence || 'medium',
-        raw:         [],
-      };
-    });
-  if (rows.length === 0) throw new Error('No expense items found. Ensure the file shows a receipt or financial document.');
-  return rows;
-}
-
-// ────────────────────────────────────────────
-// GEMINI API HELPERS
-// ────────────────────────────────────────────
-async function geminiExtractFromText(text, geminiKey) {
-  const excerpt = text.length > 6000 ? text.substring(0, 6000) + '\n[truncated]' : text;
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: PDF_SYSTEM_PROMPT }] },
-        contents: [{
-          parts: [{ text: `Extract all emission and expense items from this document:\n\n${excerpt}` }],
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini PDF error (${response.status}): ${err}`);
-  }
-
-  const data = await response.json();
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    throw new Error('Gemini returned an unexpected response format for PDF extraction.');
-  }
-  const rawText = data.candidates[0].content.parts[0].text;
-  return normalizePdfRows(parseJsonArray(rawText));
-}
-
-async function geminiExtractFromImage(base64, mediaType, geminiKey) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: IMAGE_SYSTEM_PROMPT }] },
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: mediaType, data: base64 } },
-            { text: 'Extract all expense line items from this receipt or document.' },
-          ],
-        }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini Vision error (${response.status}): ${err}`);
-  }
-
-  const data = await response.json();
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    throw new Error('Gemini returned an unexpected response format for image extraction.');
-  }
-  const rawText = data.candidates[0].content.parts[0].text;
-  return normalizeImageRows(parseJsonArray(rawText));
-}
-
-// ────────────────────────────────────────────
-// CLAUDE API HELPERS (fallback)
-// ────────────────────────────────────────────
-async function claudeExtractFromText(text, anthropicKey) {
-  const excerpt = text.length > 6000 ? text.substring(0, 6000) + '\n[truncated]' : text;
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
-      system: PDF_SYSTEM_PROMPT,
+Return ONLY a valid JSON array. No markdown, no explanation, just the raw JSON array.`,
       messages: [{
         role: 'user',
         content: `Extract all emission and expense items from this document:\n\n${excerpt}`,
@@ -581,32 +455,87 @@ async function claudeExtractFromText(text, anthropicKey) {
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Claude PDF error (${response.status}): ${err}`);
+    throw new Error(`AI PDF extraction failed (${response.status}): ${err}`);
   }
 
   const data    = await response.json();
   const rawText = data.content[0].text.trim();
-  return normalizePdfRows(parseJsonArray(rawText));
+
+  let items;
+  try {
+    const match = rawText.match(/\[[\s\S]*\]/);
+    items = JSON.parse(match ? match[0] : rawText);
+  } catch {
+    throw new Error('AI could not structure the PDF contents. Check that the file contains recognizable data.');
+  }
+
+  const validCategories = ['energy', 'transport', 'supply', 'waste', 'other'];
+
+  const rows = items
+    .filter(item => item.vendor || item.description)
+    .map(item => {
+      const co2kg  = Math.abs(parseFloat(item.co2_kg)  || 0);
+      const amount = Math.abs(parseFloat(item.amount)  || 0);
+      const rawCat = String(item.category || '').toLowerCase().trim();
+      const category = validCategories.includes(rawCat) ? rawCat : null;
+      return {
+        vendor:      String(item.vendor      || '').trim().substring(0, 80),
+        description: String(item.description || item.vendor || '').trim().substring(0, 80),
+        amount,
+        date:        String(item.date || '').trim(),
+        co2kg,
+        directCo2:   co2kg > 0,
+        category,
+        confidence:  item.confidence || 'medium',
+        raw:         [],
+      };
+    });
+
+  if (rows.length === 0) {
+    throw new Error('No recognizable data found in this PDF. Ensure it contains emission or expense information.');
+  }
+  return rows;
 }
 
-async function claudeExtractFromImage(base64, mediaType, anthropicKey) {
+// ────────────────────────────────────────────
+// IMAGE / RECEIPT PARSER (Claude Vision)
+// ────────────────────────────────────────────
+async function parseImage(file) {
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error(`"${file.name}" is too large (max 5 MB). Please compress the image and try again.`);
+  }
+
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    throw new Error('An API key is required to parse image files. Add your key to config.js.');
+  }
+
+  const base64    = await readFileAsBase64(file);
+  const mediaType = file.type || 'image/jpeg';
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
-      system: IMAGE_SYSTEM_PROMPT,
+      system: `You are a receipt and invoice parser. Extract all expense line items from the image provided. Return ONLY a valid JSON array. Each element must have: vendor (string), description (string), amount (number in USD, positive), date (string, empty if not visible), category (exactly one of: energy, transport, supply, waste, or other — energy = electricity/gas utilities/power; transport = fuel/shipping/freight/delivery; supply = materials/office supplies/packaging; waste = disposal/recycling/sanitation; other = anything else), confidence (high/medium/low). No explanations, no markdown — only the raw JSON array.`,
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: 'Extract all expense line items from this receipt or document.' },
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 },
+          },
+          {
+            type: 'text',
+            text: 'Extract all expense line items from this receipt or document.',
+          },
         ],
       }],
     }),
@@ -614,71 +543,41 @@ async function claudeExtractFromImage(base64, mediaType, anthropicKey) {
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Claude Vision error (${response.status}): ${err}`);
+    throw new Error(`Vision API error ${response.status}: ${err}`);
   }
 
   const data    = await response.json();
   const rawText = data.content[0].text.trim();
-  return normalizeImageRows(parseJsonArray(rawText));
-}
 
-// ────────────────────────────────────────────
-// AI TEXT EXTRACTOR — PDF (Claude primary, Gemini fallback)
-// ────────────────────────────────────────────
-async function aiExtractFromText(text) {
-  const geminiKey    = getGeminiKey();
-  const anthropicKey = getAnthropicKey();
-
-  if (!anthropicKey && !geminiKey) {
-    throw new Error('An API key is required to parse this PDF. Add your Anthropic key to config.js.');
+  let items;
+  try {
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    items = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+  } catch {
+    throw new Error('Could not parse image contents. The receipt may be unclear or contain no expense data.');
   }
 
-  if (anthropicKey) {
-    try {
-      return await claudeExtractFromText(text, anthropicKey);
-    } catch (claudeErr) {
-      console.warn('Claude PDF extraction failed, trying Gemini fallback:', claudeErr.message);
-      if (geminiKey) {
-        return await geminiExtractFromText(text, geminiKey);
-      }
-      throw claudeErr;
-    }
+  const imgValidCats = ['energy', 'transport', 'supply', 'waste', 'other'];
+
+  const rows = items
+    .filter(item => parseFloat(item.amount) > 0)
+    .map(item => {
+      const rawCat = String(item.category || '').toLowerCase().trim();
+      return {
+        vendor:      String(item.vendor      || '').trim().substring(0, 80),
+        description: String(item.description || item.vendor || '').trim().substring(0, 80),
+        amount:      Math.abs(parseFloat(item.amount) || 0),
+        date:        String(item.date || '').trim(),
+        category:    imgValidCats.includes(rawCat) ? rawCat : null,
+        confidence:  item.confidence || 'medium',
+        raw:         [],
+      };
+    });
+
+  if (rows.length === 0) {
+    throw new Error('No expense items found in this image. Ensure it shows a receipt or financial document.');
   }
-
-  return await geminiExtractFromText(text, geminiKey);
-}
-
-// ────────────────────────────────────────────
-// IMAGE / RECEIPT PARSER (Claude primary, Gemini fallback)
-// ────────────────────────────────────────────
-async function parseImage(file) {
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error(`"${file.name}" is too large (max 5 MB). Please compress the image and try again.`);
-  }
-
-  const geminiKey    = getGeminiKey();
-  const anthropicKey = getAnthropicKey();
-
-  if (!anthropicKey && !geminiKey) {
-    throw new Error('An API key is required to parse images. Add your Anthropic key to config.js.');
-  }
-
-  const base64    = await readFileAsBase64(file);
-  const mediaType = file.type || 'image/jpeg';
-
-  if (anthropicKey) {
-    try {
-      return await claudeExtractFromImage(base64, mediaType, anthropicKey);
-    } catch (claudeErr) {
-      console.warn('Claude image parsing failed, trying Gemini fallback:', claudeErr.message);
-      if (geminiKey) {
-        return await geminiExtractFromImage(base64, mediaType, geminiKey);
-      }
-      throw claudeErr;
-    }
-  }
-
-  return await geminiExtractFromImage(base64, mediaType, geminiKey);
+  return rows;
 }
 
 // ────────────────────────────────────────────
@@ -695,9 +594,30 @@ function ruleBasedCategory(vendor, description) {
 }
 
 // ────────────────────────────────────────────
-// AI CATEGORIZER (Claude primary, Gemini fallback)
+// AI CATEGORIZER (Anthropic Claude)
 // ────────────────────────────────────────────
-const CATEGORIZE_SYSTEM_PROMPT = `You are a sustainability analyst helping categorize business expenses by emission type.
+async function aiCategorize(unknownRows) {
+  const apiKey = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY.trim() : null;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    return unknownRows.map(r => ({ ...r, category: 'other', confidence: 'low' }));
+  }
+
+  const payload = unknownRows
+    .map((r, i) => `${i + 1}. Vendor: "${r.vendor}" | Description: "${r.description}" | Amount: $${r.amount.toFixed(2)}`)
+    .join('\n');
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are a sustainability analyst helping categorize business expenses by emission type.
 For each expense, assign exactly one category from: energy, transport, supply, waste, or other.
 - energy: electricity bills, gas utilities, power companies, solar, HVAC
 - transport: fuel, shipping carriers, freight, flights, vehicle rentals, couriers
@@ -705,98 +625,26 @@ For each expense, assign exactly one category from: energy, transport, supply, w
 - waste: waste disposal, recycling services, sanitation, cleaning
 - other: anything that doesn't clearly fit above
 Return ONLY a valid JSON array. Each element must have: index (number), category (string), confidence (high/medium/low).
-No extra text, no markdown, just the raw JSON array.`;
-
-async function aiCategorize(unknownRows) {
-  const geminiKey    = getGeminiKey();
-  const anthropicKey = getAnthropicKey();
-
-  if (!anthropicKey && !geminiKey) {
-    return unknownRows.map(r => ({ ...r, category: 'other', confidence: 'low' }));
-  }
-
-  const payload = unknownRows
-    .map((r, i) => `${i + 1}. Vendor: "${r.vendor}" | Description: "${r.description}" | Amount: $${r.amount.toFixed(2)}`)
-    .join('\n');
-  const userMsg = `Categorize these business expenses:\n${payload}`;
-
-  // Try Claude first
-  if (anthropicKey) {
-    try {
-      return await claudeCategorize(unknownRows, userMsg, anthropicKey);
-    } catch (claudeErr) {
-      console.warn('Claude categorization failed, trying Gemini fallback:', claudeErr.message);
-      if (geminiKey) {
-        return await geminiCategorize(unknownRows, userMsg, geminiKey);
-      }
-      throw claudeErr;
-    }
-  }
-
-  return await geminiCategorize(unknownRows, userMsg, geminiKey);
-}
-
-async function geminiCategorize(unknownRows, userMsg, geminiKey) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: CATEGORIZE_SYSTEM_PROMPT }] },
-        contents: [{ parts: [{ text: userMsg }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini categorization error (${response.status}): ${err}`);
-  }
-
-  const data = await response.json();
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    throw new Error('Gemini returned an unexpected response format for categorization.');
-  }
-  const rawText = data.candidates[0].content.parts[0].text;
-  const parsed  = parseJsonArray(rawText);
-
-  return unknownRows.map((row, i) => {
-    const aiResult = parsed.find(p => p.index === i + 1);
-    return {
-      ...row,
-      category:   aiResult ? aiResult.category.toLowerCase().trim() : 'other',
-      confidence: aiResult ? aiResult.confidence : 'low',
-    };
-  });
-}
-
-async function claudeCategorize(unknownRows, userMsg, anthropicKey) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
-      system: CATEGORIZE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMsg }],
+No extra text, no markdown, just the raw JSON array.`,
+      messages: [{ role: 'user', content: `Categorize these business expenses:\n${payload}` }],
     }),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Claude categorization error (${response.status}): ${err}`);
+    throw new Error(`AI API error ${response.status}: ${err}`);
   }
 
   const data    = await response.json();
   const rawText = data.content[0].text.trim();
-  const parsed  = parseJsonArray(rawText);
+
+  let parsed;
+  try {
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+  } catch {
+    throw new Error('AI returned malformed JSON. Falling back to rules.');
+  }
 
   return unknownRows.map((row, i) => {
     const aiResult = parsed.find(p => p.index === i + 1);
@@ -840,19 +688,14 @@ async function runAnalysis(rulesOnly = false) {
       allRawRows.push(...rows);
       updateFileStatus(i, 'done');
     } catch (e) {
-      console.error(`Error processing "${file.name}":`, e.message);
       updateFileStatus(i, 'error', e.message);
+      // Non-fatal: continue processing remaining files
     }
   }
 
   if (allRawRows.length === 0) {
     hideLoading();
-    // Collect per-file error details to show a helpful message
-    const errorEls = document.querySelectorAll('.file-item-status--error');
-    const errorHints = [];
-    errorEls.forEach(el => { if (el.title) errorHints.push(el.title); });
-    const detail = errorHints.length > 0 ? ' Error: ' + errorHints[0] : '';
-    showError('No valid expense data could be extracted from the uploaded files.' + detail);
+    showError('No valid expense data could be extracted from any of the uploaded files.');
     return;
   }
 
