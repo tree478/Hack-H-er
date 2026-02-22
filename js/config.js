@@ -8,4 +8,4 @@ const ANTHROPIC_API_KEY = 'your-anthropic-api-key-here';
 
 // Google Gemini — used for PDF extraction and image/receipt parsing
 // Get one at: https://aistudio.google.com/apikey
-const GEMINI_API_KEY = 'your-gemini-api-key-here';
+//const GEMINI_API_KEY = 'your-gemini-api-key-here';
